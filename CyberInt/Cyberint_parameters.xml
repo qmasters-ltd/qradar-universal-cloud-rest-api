@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+    <!-- "hostname" - CyberInt API host -->
+	<Value name="hostname" value="https://menora.cyberint.io"/>
+
+    <!-- "api_key" - CyberInt API key for QRadar (required) -->
+	<Value name="api_key" value="nGMoeAgBDAdJ3KXWNvVNNgoUdKPFMdmID7iDumMKEXWzBqww4s8m1Du7HP9xZKpgAWCRyyvfjtz1u-szcmPmokfKJi7wLgz8M2X_Wy6VoOnKcfAb1D9J30D_diz-GPkC-G1m3yCRusaEDHiaIBIPVXxAdfN7tbenwyN0zwcay4o"/>
+</WorkflowParameterValues>

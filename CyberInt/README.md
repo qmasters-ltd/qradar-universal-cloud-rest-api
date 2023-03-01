@@ -1,4 +1,4 @@
-# Rapid& CyberInt Parameters Configuration
+# CyberInt Parameters Configuration
 Parameter                           | Name | Default Value | Type | Required (True/False) | Description
 ---                                 | --- | --- | --- |--- |---
 hostname                            | Host Name | https://cyberint.com | String | True | IP or URL for the instance.

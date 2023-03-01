@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+    <!-- "hostname" - CyberInt API host -->
+	<Value name="hostname" value=""/>
+    <!-- "api_key" - CyberInt API key for QRadar (required) -->
+	<Value name="api_key" value=""/>
+
+    <!-- "severity" - Cyberint alert severity, can be multiple separated by commas, allowed values: "very_high", "high", "medium", "low". (optional) -->
+	<Value name="severity" value='"very_high", "high", "medium", "low"'/>
+	<!-- "is_closed" - Show closed/open alerts, default value: "open", "acknowledged", "closed" . (optional) -->
+	<Value name="status" value='"open", "acknowledged", "closed"'/>
+</WorkflowParameterValues>

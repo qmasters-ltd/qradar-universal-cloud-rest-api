@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
 
-    <!-- "hostname" - CyberInt API host -->
-	<Value name="hostname" value=""/>
-    <!-- "api_key" - CyberInt API key for QRadar (required) -->
-	<Value name="api_key" value=""/>
+    <!-- "hostname" - CyberInt API host. (required) -->
+	<Value name="hostname" value="https://argos-demo.cyberint.io"/>
+    <!-- "api_key" - CyberInt API key for QRadar. (required) -->
+	<Value name="api_key" value="ns6UA-s8FVccekvLQR6AWghPjYKtFZaTHA0_sDpW12jJakE-qiK5Myh1CMTG4oIaiAPdtmB4Vyq7Yf5KVf75GZiJuwLYjpqMPpJJQUPr9CFfKR9lzm5gYW7XxUa0s132zx7h3Nn_vnamMsdnHMGSGB55wcPEg4VdMy9nYIA6e3s="/>
 
     <!-- "severity" - Cyberint alert severity, can be multiple separated by commas, allowed values: "very_high", "high", "medium", "low". (optional) -->
 	<Value name="severity" value='"very_high", "high", "medium", "low"'/>
 	<!-- "is_closed" - Show closed/open alerts, default value: "open", "acknowledged", "closed" . (optional) -->
 	<Value name="status" value='"open", "acknowledged", "closed"'/>
+
+	<!-- "page_size" - Number of alerts per page, default = 100. (optional) -->
+	<Value name="page_size" value="100"/>
 </WorkflowParameterValues>

@@ -4,6 +4,7 @@
         <Parameter name="api_key" label="API Key" required="true" secret="true" />
         <Parameter name="severity" label="Severity" required="false" />
         <Parameter name="status" label="Status" required="false" default="false" />
+        <Parameter name="page_size" label="Page Size" required="false" default="false" />
     </Parameters>
 
     <Actions>
@@ -25,7 +26,7 @@
             <RequestBody type="application/json" encoding="UTF-8">
                 {
                     "page": 1,
-                    "size": 100,
+                    "size": ${/page_size},
                     "include_csv_attachments_as_json_content": true,
                     "filters":
                         {   

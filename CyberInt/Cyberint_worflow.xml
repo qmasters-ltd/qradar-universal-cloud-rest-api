@@ -53,6 +53,9 @@
             <If condition="/get_alerts/status_code = 403" >
                 <Abort reason="The user or team account does not have access to the endpoint/feature/resource." />
             </If>
+            <If condition="/get_alerts/status_code = 401" >
+                <Abort reason="Invalid token or token expired." />
+            </If>
 
             <If condition="/get_alerts/status_code = 422" >
                 <Abort reason="Bad input parameter. The response body is a plaintext message with more information." />

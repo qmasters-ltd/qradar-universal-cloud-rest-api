@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+	<!-- "api_host" - Fortress API host (Default="https://develop-api.qfortress.ai")-->
+	<Value name="api_host" value="https://develop-api.qfortress.ai"/>
+	<!-- "api_key" - Fortress API key for QRadar (required) -->
+	<Value name="api_key" value="8355b8681646ced8"/>
+	<!-- "api_secert" - Fortress API secret for QRadar (required) -->
+	<Value name="api_secert" value="18bef6572668643ac14a5f2b3056d971:3d619d70-a569-11ed-b674-712e6889c774"/>
+
+	<!-- "severity" - Fortress alert severity, can be multiple separated by commas, allowed values: CRITICAL,HIGH,MEDIUM,LOW,NONE. (Default=All). (optional) -->
+	<Value name="severity" value='"CRITICAL","HIGH","MEDIUM","LOW","NONE"'/>
+	<!-- "status" - Show closed/open alerts, allows values: OPEN,CLOSED,DISMISSED,QUARANTINED,NO_CAPACITY,DETECTED,MITIGATED. (Default=all). (optional) -->
+	<Value name="status" value='"OPEN","CLOSED","DISMISSED","QUARANTINED","NO_CAPACITY","DETECTED","MITIGATED"'/>
+
+	<!-- "service_type" - This parameter is an array of strings used to filter alerts by service type, allows values: EDP,WEB,MAIL,CLOUD_STORAGE,VMDR,ATTACK_SIMULATOR,MERLIN_AI,SANDBOX. (Default=all). (optional) -->
+	<Value name="service_type" value='"EDP","WEB","MAIL","CLOUD_STORAGE","VMDR","ATTACK_SIMULATOR","MERLIN_AI","SANDBOX"'/>
+
+	<!-- "page_size" - Max number of alerts to return per poll (Default=100). (optional) -->
+	<Value name="page_size" value="3"/>
+	<!-- "time_zone" - select your time zone (Default=UTC). (optional) -->
+	<Value name="time_zone" value="UTC"/>
+</WorkflowParameterValues>

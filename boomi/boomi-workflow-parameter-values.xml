@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+	<!-- [identifier] [REQUIRED] - The log source identifier to post the events to. -->
+	<Value name="identifier" value=""/>
+	<!-- [account_id] [REQUIRED] - Boomi account ID.-->
+	<Value name="account_id" value=""/>
+	<!-- [username] [REQUIRED] - Boomi user name. -->
+	<Value name="username" value=""/>
+	<!-- [token] [REQUIRED] - Boomi token. -->
+	<Value name="token" value=""/>
+	<!-- [time_zone] [OPTIONAL] [DEFAULT=UTC] - The time zone to be used. -->
+	<Value name="time_zone" value=""/>
+	<!-- [start_fetch_time] [REQUIRED] - The date time from which events will be initially retrieved. for example: "2020-10-16T15:21:57Z"-->
+	<Value name="start_fetch_time" value=""/>
+	<!-- [sleep_time_in_seconds] [OPTIONAL] [DEFAULT=120] - The downtime for the connector after it is in sync with the server (Min: 0). -->
+	<Value name="sleep_time_in_seconds" value=""/>
+</WorkflowParameterValues>

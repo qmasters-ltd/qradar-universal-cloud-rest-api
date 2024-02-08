@@ -1,0 +1,167 @@
+<Workflow name="Qmasters Boomi" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="identifier" label="Identifier" description="The log source identifier to post the events to." required="true" />
+        <Parameter name="account_id" label="Account ID" description="Boomi account ID." required="true" />
+        <Parameter name="username" label="Username" description="Boomi user name." required="true" />
+        <Parameter name="token" label="Token" description="Boomi user's Token." required="true" secret="true" />
+        <Parameter name="time_zone" label="Time Zone" description="The timezone to be used." default="UTC" />
+        <Parameter name="start_fetch_time" label="Initial Event Start Time Date" description="Date time from which events will be initially retrieved." required="false"/>
+        <Parameter name="sleep_time_in_seconds" label="Sleep Time in Seconds" description="The downtime for the connector after it is in sync with the server (Min: 0)." default="120" />
+    </Parameters>
+
+    <Actions>
+        <!-- Clear the log source status before a new workflow run starts. -->
+        <ClearStatus />
+
+        <Set path="/fetch_counter" value="1" />
+        <Set path="/events_count" value="0" />
+        <Set path="/all_events_date" value="[]"/>
+        <Set path="/sleep_time" value="${/sleep_time_in_seconds * 1000}"/>
+        <Initialize path="/time_format" value="yyyy-MM-dd'T'HH:mm:ss'Z'" />
+
+        <!-- Initialize the risingValue filter for the first run. -->
+        <If condition="count(/start_fetch_time) > 0" >
+            <Initialize path="/bookmark" value="${/start_fetch_time}"/>
+        </If>
+        <Else>
+            <Initialize path="/bookmark" value="${time() - 3600000}" />
+            <FormatDate  pattern="${/time_format}" timeZone="${/time_zone}" time="${/bookmark}" savePath="/bookmark" />
+        </Else>
+
+        <Log type="INFO" message="[Boomi]: Start fetching events..." />
+        <Log type="INFO" message="[Boomi]: Account ID: ${/account_id}. Username: ${/username}. Start time: ${/bookmark}." />
+
+        <!-- Set the last updated time filter for the first run. -->
+        <Set path="/current_time" value="${time()}" />
+
+        <FormatDate  pattern="${/time_format}" timeZone="${/time_zone}" time="${/current_time}" savePath="/last_current_time" />
+
+        <!-- Pagination handling: aslong as events are returned, keep fetching data. -->
+        <While condition="true">
+            <Log type="INFO" message="[Boomi]: Running fetch number ${/fetch_counter} for AuditLogs..." />
+            <!-- Get the reports. -->
+            <CallEndpoint url="https://api.boomi.com/api/rest/v1/${/account_id}/AuditLog/query" method="POST" savePath="/response" >
+                <!-- <SSLConfiguration allowUntrustedServerCertificate="true" /> -->
+                <BasicAuthentication username="${/username}" password="${/token}" />
+                <XmlRequestBody>
+                    <QueryConfig xmlns="http://api.platform.boomi.com/">
+                        <QueryFilter>
+                            <expression operator="and" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GroupingExpression">
+                            <nestedExpression operator="EQUALS" property="type" xsi:type="SimpleExpression">
+                                <argument>as.atom</argument>
+                            </nestedExpression>
+                            <nestedExpression operator="BETWEEN" property="date" xsi:type="SimpleExpression">
+                                <argument>${/bookmark}</argument>
+                                <argument>${/last_current_time}</argument>
+                            </nestedExpression>
+                            </expression>
+                        </QueryFilter>
+                    </QueryConfig>
+                </XmlRequestBody>
+            </CallEndpoint>
+
+            <Log type="INFO" message="[Boomi]: Done first run for AuditLogs, got status code: ${/response/status_code}." />
+
+            <If condition="/response/status_code = 200">
+                <!-- Handle a succesful response. -->
+                <XPathQuery xmlPath="/response/body" xPathQuery="/*['QueryResult'=local-name()]/*['result'=local-name()]" savePath="/events" />
+                <XPathQuery xmlPath="/response/body" xPathQuery="/*['QueryResult'=local-name()]/*['result'=local-name()]/@date" savePath="/events_date" />
+                <XPathQuery xmlPath="/response/body" xPathQuery="/*['QueryResult'=local-name()]/@numberOfResults" singleton="true" savePath="/total_exist_events" />
+                <XPathQuery xmlPath="/response/body" xPathQuery="/*['QueryResult'=local-name()]/*['queryToken'=local-name()]/text()" singleton="true" savePath="/query_token" />
+
+                <Set path="/events_count" value="${count(/events)}" />
+                <Set path="/total_fetched_events" value="${count(/events)}" />
+
+                <Log type="INFO" message="[Boomi]: Total exist events: ${/total_exist_events}." />
+                <Log type="INFO" message="[Boomi]: Run number ${/fetch_counter} - fetched events: ${/events_count}." />
+                <Log type="INFO" message="[Boomi]: Total fetched events: ${/total_fetched_events}." />
+                <Log type="INFO" message="[Boomi]: More events to fetch: ${/total_exist_events - /total_fetched_events}." />
+
+                <Set path="/fetch_counter" value="${/fetch_counter + 1}" />
+                <Log type="INFO" message="[Boomi]: Recived token for more events: ${not empty(/query_token)}" />
+
+                <!-- Post events if any. -->
+                <If condition="${/events_count} > 0">
+                    <Log type="INFO" message="[Boomi]: Posting ${/events_count} fetched events..." />
+                    <PostEvents path="/events" source="${/identifier}" />
+                </If>
+
+                <!-- If there more events to fetch. -->
+                <While condition="not empty(/query_token)">
+                    <Log type="INFO" message="[Boomi]: Running fetch number ${/fetch_counter} for MORE AuditLogs..." />
+                    <CallEndpoint url="https://api.boomi.com/api/rest/v1/${/account_id}/AuditLog/queryMore" method="POST" savePath="/response" >
+                        <!-- <SSLConfiguration allowUntrustedServerCertificate="true" /> -->
+                        <BasicAuthentication username="${/username}" password="${/token}" />
+                        <RequestBody type="text/xml" encoding="UTF-8">${/query_token}</RequestBody>
+                    </CallEndpoint>
+
+                    <Log type="INFO" message="[Boomi]: Done fetch MORE AuditLogs, got status code: ${/response/status_code}." />
+
+                    <If condition="/response/status_code = 200">
+                        <XPathQuery xmlPath="/response/body" xPathQuery="/*['QueryResult'=local-name()]/*['result'=local-name()]" savePath="/events" />
+                        <XPathQuery xmlPath="/response/body" xPathQuery="/*['QueryResult'=local-name()]/*['result'=local-name()]/@date" savePath="/events_date" />
+                        <XPathQuery xmlPath="/response/body" xPathQuery="/*['QueryResult'=local-name()]/*['queryToken'=local-name()]/text()" singleton="true" savePath="/query_token" />
+
+                        <Log type="INFO" message="[Boomi]: Recived token for more events: ${not empty(/query_token)}" />
+
+                        <Set path="/events_count" value="${count(/events)}" />
+                        <Set path="/total_fetched_events" value="${/total_fetched_events + /events_count}" />
+
+                        <Log type="INFO" message="[Boomi]: Total exist events: ${/total_exist_events}." />
+                        <Log type="INFO" message="[Boomi]: Run number ${/fetch_counter} - fetched events: ${/events_count}." />
+                        <Log type="INFO" message="[Boomi]: Total fetched events: ${/total_fetched_events}." />
+                        <Log type="INFO" message="[Boomi]: More events to fetch: ${/total_exist_events - /total_fetched_events}." />
+
+                        <Merge targetPath="/all_events_date" sourcePath="/events_date" />
+
+                        <Set path="/fetch_counter" value="${/fetch_counter + 1}" />
+
+                        <Log type="INFO" message="[Boomi]: Posting ${/events_count} fetched events..." />
+
+                        <PostEvents path="/events" source="${/identifier}" />
+                    </If>
+
+                    <Else>
+                        <Log type="ERROR" message="[Boomi]: status code ${/response/status_code}, abort to get events. Reason: ${/response/body}" />
+                        <Abort reason="${/response}" />
+                    </Else>
+
+                </While>
+                <Log type="INFO" message="[Boomi]: Done fetch period, total time in milliseconds is: ${time() - /current_time}" />
+
+                <If condition="${/events_count} > 0">
+                    <Merge targetPath="/all_events_date" sourcePath="/events_date" />
+
+                    <Set path="/bookmark" value="${max(/all_events_date)}" />
+                    <Log type="INFO" message="[Boomi]: Max events date ${/bookmark}." />
+
+                    <ParseDate pattern="${/time_format}" timeZone="${/time_zone}" date="${/bookmark}" savePath="/bookmark" />
+                    <Set path="/bookmark" value="${/bookmark + 1000}" />
+                    <FormatDate  pattern="${/time_format}" timeZone="${/time_zone}" time="${/bookmark}" savePath="/bookmark" />
+                </If>
+
+                <If condition="${/total_exist_events} = ${/total_fetched_events}">
+                    <Log type="INFO" message="[Boomi]: Next start time for fetch AuditLogs updated to: ${/bookmark}" />
+                    <Log type="INFO" message="[Boomi]: Connecter is in sync with Boomi server, reseting fetch counter and going to sleep for ${/sleep_time_in_seconds} seconds..." />
+                    <Set path="/fetch_counter" value="1" />
+                    <Sleep duration="${/sleep_time}" />
+                </If>
+            </If>
+
+            <ElseIf condition="/response/status_code = 403">
+                <!-- If the bearer token has expired fetch a new one.  -->
+                <Log type="INFO" message="[Boomi]: Authentication failed. Please verify your credentials and try again." />
+            </ElseIf>
+            <Else>
+                <Log type="ERROR" message="[Boomi]: status code ${/response/status_code}, abort to get events. Reason: ${/response/body}" />
+                <Abort reason="${/response}" />
+            </Else>
+        </While>
+    </Actions>
+
+    <Tests>
+        <DNSResolutionTest host="https://api.boomi.com" />
+        <TCPConnectionTest host="https://api.boomi.com/api/rest/v1/${/account_id}" />
+        <HTTPConnectionThroughProxyTest url="https://api.boomi.com/api/rest/v1/${/account_id}" expectedResponseStatus="404" />
+    </Tests>
+</Workflow>

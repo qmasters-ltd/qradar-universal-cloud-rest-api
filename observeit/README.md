@@ -11,7 +11,7 @@
 | `report_type`                    | Report Type                                  | True                  | String          | The report type to poll. One of:<br>`alert_v0`,<br>`audit_configuration_v0`,<br>`audit_logins_v0`,<br>`audit_saved_sessions_v0`,<br>`audit_session_playback_v0`,<br>`system_events_v0`,<br>`user_command_activity_with_output_v0`,<br>`user_command_output_stream_v0`,<br>`user_dba_activity_v0`,<br>`user_file_activity_v0`,<br>`user_interface_activity_v0`,<br>`user_messaging_actions_activity_v0`,<br>`user_session_v0`. |               |
 | `piis_to_exclude`                | Personal Identifiable Information to Exclude | False                 | String          | Comma-separated list of Personal Identifiable Information (PII) to exclude.                               | `loginName`, `secondaryLoginName`, `endpointName`, `remoteHostName`, `windowTitle`, `accessedUrl`, `domainName`, `secondaryDomainName`, `remoteAddress`, `sqlUserName`, `sessionServerName`, `sessionLoginName`, `savedSessionName`, `operatorUsername`, `operatorDomainName`, `userName`, `machineName` |
 | `sleep_time_in_seconds`          | Sleep Time in Seconds                        | False                 | Number          | The downtime for the connector after it is in sync with the server (Min: 0).                              | `20`          |
-
+| `debug_mode`          | Debug Mode                        | False                 | String          | Set to `true` in case you want to get debug logs as event logs.                              | `false`          |
 
 # How to Generate Client ID and Client Secret
 1. Log on to your ObserveIT instance through: https://\<MyObserveIT>/ObserveIT.

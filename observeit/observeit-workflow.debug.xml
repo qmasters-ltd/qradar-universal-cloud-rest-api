@@ -24,18 +24,13 @@
 
         <!-- Initialize the risingValue filter for the first run. -->
         <Initialize path="/bookmark" value="${time() - /initial_event_fetch_period * 86400 * 1000}" />
-
-        <Set path="/log_message" value="[Debug]:[Obsereit]: 'risingValue' time for '${/report_type}' to be fetched is: ${/bookmark}" />
+        <Set path="/log_message" value="[ObserveIT]: 'risingValue' time for '${/report_type}' to be fetched is: ${/bookmark}" />
+        <PostEvent path="/log_message" source="${/identifier}" />
         <Log type="INFO" message="${/log_message}" />
-        <If condition="${/debug_mode} = true">
-            <PostEvent path="/log_message" source="${/identifier}" />
-        </If>
 
-        <Set path="/log_message" value="[Debug]:[Obsereit]: Authenticating, fetching bearer token..."/>
+        <Set path="/log_message" value="[ObserveIT]: Authenticating, fetching bearer token..."/>
+        <PostEvent path="/log_message" source="${/identifier}" />
         <Log type="INFO" message="${/log_message}" />
-        <If condition="${/debug_mode} = true">
-            <PostEvent path="/log_message" source="${/identifier}" />
-        </If>
 
 		<!-- Get Bearer Token. -->
 		<CallEndpoint url="${/hostname}/v2/apis/auth/oauth/token" method="POST" savePath="/response" >
@@ -51,59 +46,45 @@
 		<!-- Handle errors. -->
         <If condition="/response/status_code != 200">
             <If condition="/response/status_code = 400">
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: ${/response/body/_status/message}" />
+                <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: ${/response/body/_status/message}" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="INFO" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
                 <Abort reason="${/response}" />
             </If>
             <If condition="/response/status_code = 401">
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: Authentication error!" />
+                <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: Authentication error!" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="ERROR" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
                 <Abort reason="${/response}" />
             </If>
             <If condition="/response/status_code = 404">
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: URL not found!" />
+                <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: URL not found!" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="ERROR" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
                 <Abort reason="${/response}" />
             </If>
             <If condition="/response/status_code = 408">
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: Timeout error!" />
+                <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: Timeout error!" />
                 <PostEvent path="/log_message" source="${/identifier}" />
-                <If condition="${/debug_mode} = true">
-                    <Log type="ERROR" message="${/log_message}" />
-                </If>
+                <Log type="ERROR" message="${/log_message}" />
                 <Abort reason="${/response}" />
             </If>
             <If condition="/response/status_code = 500">
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: Invalid client_id" />
+                <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: Invalid client_id" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="ERROR" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
                 <Abort reason="${/response}" />
             </If>
 
-            <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: ${/response}" />
+			<Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: ${/response}" />
+            <PostEvent path="/log_message" source="${/identifier}" />
             <Log type="ERROR" message="${/log_message}" />
-            <If condition="${/debug_mode} = true">
-                <PostEvent path="/log_message" source="${/identifier}" />
-            </If>
             <Abort reason="${/response}" />
         </If>
 
-        <Set path="/log_message" value="[Debug]:[Obsereit]: Bearer token received!" />
+        <Set path="/log_message" value="[ObserveIT]: Bearer token received!" />
+        <PostEvent path="/log_message" source="${/identifier}" />
         <Log type="INFO" message="${/log_message}" />
-        <If condition="${/debug_mode} = true">
-            <PostEvent path="/log_message" source="${/identifier}" />
-        </If>
         <!-- Save the bearer token. -->
 		<Set path="/bearer_token" value="${/response/body/access_token}" />
 
@@ -112,11 +93,9 @@
 
         <If condition="count(/piis_to_exclude) > 0">
             <!-- Create a list of PIIs to exclude. -->
-            <Set path="/log_message" value="[Debug]:[Obsereit]: Fetching fields for the report type '${/report_type}'..." />
+            <Set path="/log_message" value="[ObserveIT]: Fetching fields for the report type '${/report_type}'..." />
+            <PostEvent path="/log_message" source="${/identifier}" />
             <Log type="INFO" message="${/log_message}" />
-            <If condition="${/debug_mode} = true">
-                <PostEvent path="/log_message" source="${/identifier}" />
-            </If>
 
             <!-- Get the report type's fields. -->
             <CallEndpoint url="${/hostname}/v2/apis/report;realm=ObserveIT/reports/${/report_type}" method="GET" savePath="/response" >
@@ -127,35 +106,27 @@
             <!-- Handle errors. -->
             <If condition="/response/status_code != 200">
                 <If condition="/response/status_code = 401">
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get ${/report_type} report fields, reason: Authentication error!" />
+                    <Set path="/log_message" value="[ObserveIT]: Abort at get ${/report_type} report fields, reason: Authentication error!" />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="ERROR" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
                     <Abort reason="${/response}" />
                 </If>
                 <If condition="/response/status_code = 404">
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get ${/report_type} report fields, reason: URL not found!" />
+                    <Set path="/log_message" value="[ObserveIT]: Abort at get ${/report_type} report fields, reason: URL not found!" />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="ERROR" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
                     <Abort reason="${/response}" />
                 </If>
                 <If condition="/response/status_code = 408">
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get ${/report_type} report fields, reason: Timeout error!" />
+                    <Set path="/log_message" value="[ObserveIT]: Abort at get ${/report_type} report fields, reason: Timeout error!" />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="ERROR" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
                     <Abort reason="${/response}" />
                 </If>
 
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get ${/report_type} report fields, reason: ${/response}" />
+                <Set path="/log_message" value="[ObserveIT]: Abort at get ${/report_type} report fields, reason: ${/response}" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="ERROR" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
                 <Abort reason="${/response}" />
             </If>
 
@@ -185,20 +156,16 @@
             </ForEach>
         </If>
 
-        <Set path="/log_message" value="[Debug]:[Obsereit]: The following fields will be fetched for the report type '${/report_type}': ${/fields}." />
+        <Set path="/log_message" value="[ObserveIT]: The following fields will be fetched for the report type '${/report_type}': ${/fields}." />
+        <PostEvent path="/log_message" source="${/identifier}" />
         <Log type="INFO" message="${/log_message}" />
-        <If condition="${/debug_mode} = true">
-            <PostEvent path="/log_message" source="${/identifier}" />
-        </If>
 
         <!-- Pagination handling: aslong as events are returned, keep fetching data. -->
         <While condition="true">
             <Set path="/start_time" value="${time()}" />
-            <Set path="/log_message" value="[Debug]:[Obsereit]: Running fetch number ${/fetch_counter} for '${/report_type}'..." />
+            <Set path="/log_message" value="[ObserveIT]: Running fetch number ${/fetch_counter} for '${/report_type}'..." />
+            <PostEvent path="/log_message" source="${/identifier}" />
             <Log type="INFO" message="${/log_message}" />
-            <If condition="${/debug_mode} = true">
-                <PostEvent path="/log_message" source="${/identifier}" />
-            </If>
 
             <!-- Get the reports. -->
             <CallEndpoint url="${/hostname}/v2/apis/report;realm=ObserveIT/reports/${/report_type}/stream" method="GET" savePath="/response" >
@@ -209,30 +176,24 @@
                 <QueryParameter name="since" value="${/bookmark}" />
             </CallEndpoint>
 
-            <Set path="/log_message" value="[Debug]:[Obsereit]: Done fetch request, got status code: ${/response/status_code}." />
+            <Set path="/log_message" value="[ObserveIT]: Done fetch request, got status code: ${/response/status_code}." />
+            <PostEvent path="/log_message" source="${/identifier}" />
             <Log type="INFO" message="${/log_message}" />
-            <If condition="${/debug_mode} = true">
-                <PostEvent path="/log_message" source="${/identifier}" />
-            </If>
 
             <If condition="/response/status_code = 200">
                 <!-- Handle a succesful response. -->
                 <Set path="/events_count" value="${count(/response/body/data)}" />
                 <Set path="/fetch_counter" value="${/fetch_counter + 1}" />
 
-                <Set path="/log_message" value="[Debug]:[Obsereit]: ${/events_count} events for were fetched for '${/report_type}'." />
+                <Set path="/log_message" value="[ObserveIT]: ${/events_count} events for were fetched for '${/report_type}'." />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="INFO" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
 
                 <!-- If there were any events, post them and update the risingValue timer to the latest one. -->
                 <If condition="${/events_count} > 0">
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Posting fetched events..." />
+                    <Set path="/log_message" value="[ObserveIT]: Posting fetched events..." />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="INFO" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
 
                     <PostEvents path="/response/body/data" source="${/identifier}" />
 
@@ -242,37 +203,28 @@
                     <FormatDate pattern="${/time_format}" timeZone="${/time_zone}" time="${/last_risingValue}" savePath="/bookmark" />
                     <ParseDate pattern="${/time_format}" timeZone="${/time_zone}" date="${/bookmark}" savePath="/bookmark" />
 
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: 'risingValue' time for '${/report_type}' updated to: ${/bookmark}" />
+                    <Set path="/log_message" value="[ObserveIT]: 'risingValue' time for '${/report_type}' updated to: ${/bookmark}" />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="INFO" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
                 </If>
 
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Done fetch period, total time in milliseconds is: ${time() - /start_time}" />
+                <Set path="/log_message" value="[ObserveIT]: Done fetch period, total time in milliseconds is: ${time() - /start_time}" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="INFO" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
 
                 <If condition="${/events_per_poll} > ${/events_count}">
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Connecter is in sync with ObserveIT server, reseting fetch counter and going to sleep for ${/sleep_time_in_seconds} seconds..." />
+                    <Set path="/log_message" value="[ObserveIT]: Connecter is in sync with ObserveIT server, reseting fetch counter and going to sleep for ${/sleep_time_in_seconds} seconds..." />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="INFO" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
-
                     <Set path="/fetch_counter" value="1" />
                     <Sleep duration="${/sleep_time}" />
                 </If>
             </If>
             <ElseIf condition="/response/status_code = 401">
                 <!-- If the bearer token has expired fetch a new one.  -->
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Bearer token expired, fetching new token..." />
+                <Set path="/log_message" value="[ObserveIT]: Bearer token expired, fetching new token..." />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="INFO" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
 
                 <!-- Get Bearer Token. -->
                 <CallEndpoint url="${/hostname}/v2/apis/auth/oauth/token" method="POST" savePath="/response" >
@@ -288,86 +240,66 @@
                 <!-- Handle errors. -->
                 <If condition="/response/status_code != 200">
                     <If condition="/response/status_code = 400">
-                        <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: ${/response/body/_status/message}" />
+                        <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: ${/response/body/_status/message}" />
+                        <PostEvent path="/log_message" source="${/identifier}" />
                         <Log type="ERROR" message="${/log_message}" />
-                        <If condition="${/debug_mode} = true">
-                            <PostEvent path="/log_message" source="${/identifier}" />
-                        </If>
                         <Abort reason="${/response}" />
                     </If>
                     <If condition="/response/status_code = 401">
-                        <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: Authentication error!" />
+                        <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: Authentication error!" />
+                        <PostEvent path="/log_message" source="${/identifier}" />
                         <Log type="ERROR" message="${/log_message}" />
-                        <If condition="${/debug_mode} = true">
-                            <PostEvent path="/log_message" source="${/identifier}" />
-                        </If>
                         <Abort reason="${/response}" />
                     </If>
                     <If condition="/response/status_code = 404">
-                        <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: URL not found!" />
+                        <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: URL not found!" />
+                        <PostEvent path="/log_message" source="${/identifier}" />
                         <Log type="ERROR" message="${/log_message}" />
-                        <If condition="${/debug_mode} = true">
-                            <PostEvent path="/log_message" source="${/identifier}" />
-                        </If>
                         <Abort reason="${/response}" />
                     </If>
                     <If condition="/response/status_code = 408">
-                        <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: Timeout error!" />
+                        <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: Timeout error!" />
+                        <PostEvent path="/log_message" source="${/identifier}" />
                         <Log type="ERROR" message="${/log_message}" />
-                        <If condition="${/debug_mode} = true">
-                            <PostEvent path="/log_message" source="${/identifier}" />
-                        </If>
                         <Abort reason="${/response}" />
                     </If>
                     <If condition="/response/status_code = 500">
-                        <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: Invalid client_id" />
+                        <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: Invalid client_id" />
+                        <PostEvent path="/log_message" source="${/identifier}" />
                         <Log type="ERROR" message="${/log_message}" />
-                        <If condition="${/debug_mode} = true">
-                            <PostEvent path="/log_message" source="${/identifier}" />
-                        </If>
                         <Abort reason="${/response}" />
                     </If>
 
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get token, reason: ${/response}" />
+                    <Set path="/log_message" value="[ObserveIT]: Abort at get token, reason: ${/response}" />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="ERROR" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
                     <Abort reason="${/response}" />
                 </If>
 
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Bearer token received!" />
+                <Set path="/log_message" value="[ObserveIT]: Bearer token received!" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="INFO" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
                 <!-- Save the bearer token. -->
                 <Set path="/bearer_token" value="${/response/body/access_token}" />
             </ElseIf>
             <Else>
                 <!-- If an unexpected error was received from the API -->
                 <If condition="/response/status_code = 400">
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get ${/report_type} reports, reason: ${/response}/body/_status/message" />
+                    <Set path="/log_message" value="[ObserveIT]: Abort at get ${/report_type} reports, reason: ${/response}/body/_status/message" />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="ERROR" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
                     <Abort reason="${/response}" />
                 </If>
                 <If condition="/response/status_code = 404">
-                    <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get ${/report_type} reports, reason: URL not found!" />
+                    <Set path="/log_message" value="[ObserveIT]: Abort at get ${/report_type} reports, reason: URL not found!" />
+                    <PostEvent path="/log_message" source="${/identifier}" />
                     <Log type="ERROR" message="${/log_message}" />
-                    <If condition="${/debug_mode} = true">
-                        <PostEvent path="/log_message" source="${/identifier}" />
-                    </If>
                     <Abort reason="${/response}" />
                 </If>
 
-                <Set path="/log_message" value="[Debug]:[Obsereit]: Abort at get ${/report_type} reports, reason: ${/response}" />
+                <Set path="/log_message" value="[ObserveIT]: Abort at get ${/report_type} reports, reason: ${/response}" />
+                <PostEvent path="/log_message" source="${/identifier}" />
                 <Log type="ERROR" message="${/log_message}" />
-                <If condition="${/debug_mode} = true">
-                    <PostEvent path="/log_message" source="${/identifier}" />
-                </If>
                 <Abort reason="${/response}" />
             </Else>
         </While>

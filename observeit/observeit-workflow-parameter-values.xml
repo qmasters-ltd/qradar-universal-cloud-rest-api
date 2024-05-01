@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
-	<!-- Instance URL or IP -->
-	<Value name="hostname" value=""/>
+	<!-- [identifier] [REQUIRED] - The log source identifier to post the events to. -->
+	<Value name="identifier" value=""/>
+	<!-- [hostname] [REQUIRED] - Instance URL or IP. -->
+	<Value name="hostname" value="https://myObserveIT.com"/>
 	<!-- Can be received through the Developer Portal by selecting Credentials and pressing the Create App button. -->
+	<!-- [client_id] [REQUIRED] -->
 	<Value name="client_id" value=""/>
+	<!-- [client_secret] [REQUIRED] -->
 	<Value name="client_secret" value=""/>
 
-	<!-- Max number of records to return per poll -->
-	<Value name="events_per_poll" value="100"/>
-	<!-- Exclude Personal Identifiable Information from the reports. -->
-	<Value name="exclude_pii" value="false"/>
 
-	<!-- Report types to poll. -->
-	<Value name="poll_alert" value="true"/>
-	<Value name="poll_configuration_activity" value="true"/>
-	<Value name="poll_login_activity" value="true"/>
-	<Value name="poll_saved_session_activity" value="true"/>
-	<Value name="poll_session_playback_activity" value="true"/>
-	<Value name="poll_system_event" value="true"/>
-	<Value name="poll_command_activity_with_output" value="true"/>
-	<Value name="poll_command_output_stream" value="true"/>
-	<Value name="poll_dba_activity" value="true"/>
-	<Value name="poll_file_activity" value="true"/>
-	<Value name="poll_interface_activity" value="true"/>
-	<Value name="poll_messaging_actions_activity" value="true"/>
-	<Value name="poll_session" value="true"/>
+	<!-- [time_zone] [OPTIONAL] [DEFAULT=UTC] - The timezone used in ObserveIT. -->
+	<Value name="time_zone" value="UTC"/>
+	<!-- [events_per_poll] [OPTIONAL] [DEFAULT=100] - Max number of records to return per poll. Note: a large fetch may cause timeout errors. -->
+	<Value name="events_per_poll" value="100"/>
+	<!-- [initial_event_fetch_period] [OPTIONAL] [DEFAULT=7]- Number of days in the past from which events will be initially retrieved. -->
+	<Value name="initial_event_fetch_period" value="7"/>
+	<!-- [report_type] [REQUIRED] - The report type to poll. One of: `alert_v0`,`audit_configuration_v0`,`audit_logins_v0`,`audit_saved_sessions_v0`,`audit_session_playback_v0`,`system_events_v0`,`user_command_activity_with_output_v0`,`user_command_output_stream_v0`,`user_dba_activity_v0`,`user_file_activity_v0`,`user_interface_activity_v0`,`user_messaging_actions_activity_v0`,`user_session_v0`. -->
+	<Value name="report_type" value=""/>
+	<!-- [piis_to_exclude] [OPTIONAL]- Comma-separated list of Personal Identifiable Information (PII) to exclude. For example: loginName,secondaryLoginName,endpointName,remoteHostName.  -->
+	<Value name="piis_to_exclude" value=""/>
+	<!-- [sleep_time_in_seconds] [OPTIONAL] [DEFAULT=20] - The downtime for the connector after it is in sync with the server (Min: 0). -->
+	<Value name="sleep_time_in_seconds" value="20"/>
+	<!-- [debug_mode] [OPTIONAL] [DEFAULT=false] - Set to `true` in case you want to get debug logs as event logs . -->
+	<Value name="debug_mode" value="false"/>
 </WorkflowParameterValues>

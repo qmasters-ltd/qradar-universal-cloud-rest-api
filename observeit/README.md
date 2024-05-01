@@ -1,24 +1,17 @@
 # ObserveIT Parameters Configuration
-Parameter                           | Name | Default Value | Type | Required (True/False) | Description
----                                 | --- | --- | --- |--- |---
-hostname                            | Host Name | https://myobserveit.com | String | True | IP for the instance.
-client_id                           | Organization Key | False | Authentication | True | Can be received through the Developer Portal by selecting Credentials and pressing the Create App button.
-client_secret                       | API Secret | False | Authentication | True | Can be received through the Developer Portal by selecting Credentials and pressing the Create App button.
-poll_alert                          | Poll Alert | False | Bool | False | Alert Events.
-poll_configuration_activity         | Poll Configuration Activity | False | Bool | False | Audit Configuration Activity.
-poll_login_activity                 | Poll Login Activity | False | Bool | False | Audit Login Activity.
-poll_saved_session_activity         | Poll Saved Session Activity | False | Bool | False | Audit Saved Sessions Activity.
-poll_session_playback_activity      | Poll Session Playback Activity | False | Bool | False | Audit Session Playback Activity.
-poll_system_event                   | Poll System Event | False | Bool | False | System Events.
-poll_command_activity_with_output   | Poll Command Activity with Output | False | Bool | False | UNIX Command Events
-poll_command_output_stream          | Poll Command Output Stream | False | Bool | False | UNIX Output Streams
-poll_dba_activity                   | Poll Database Activity | False | Bool | False | Database Events
-poll_file_activity                  | Poll File Activity | False | Bool | False | File Monitoring Activity Events
-poll_interface_activity             | Poll Interface Activity | False | Bool | False | Windows/Mac user interface interaction events
-poll_messaging_actions_activity     | Poll Messaging Action Activity | False | Bool | False | Messaging Actions Activity Events
-poll_session                        | Poll Session Activity | False | Bool | False | Summary of activities for a completed or in-progress user session
-events_per_poll                     | Events Per Poll | 100 | Number | False | Max number of records to return per poll
-exclude_pii                         | Exclude Personal Information | False | Bool | False | Exclude Personal Identifiable Information from the reports.The fields to exclude are: `loginName`, `secondaryLoginName`, `endpointName`, `remoteHostName`, `windowTitle`,`accessedUrl`, `domainName`, `secondaryDomainName`, `remoteAddress`,`sqlUserName`, `sessionServerName`, `sessionLoginName`,  `savedSessionName`, `operatorUsername`, `operatorDomainName`, `userName`, `machineName`
+| Parameter                        | Name                                         | Required (True/False) | Type            | Description                                                                                               | Default Value |
+|----------------------------------|----------------------------------------------|-----------------------|-----------------|-----------------------------------------------------------------------------------------------------------|---------------|
+| `identifier`                     | Log Source Identifier                        | True                  | String          | The log source identifier to post the events to.                                                          |               |
+| `hostname`                       | Host Name                                    | True                  | String          | IP for the instance.                                                                                      | `https://myObserveIT.com` |
+| `client_id`                      | Organization Key                             | True                  | Authentication  | Can be received through the Developer Portal by selecting Credentials and pressing the Create App button. |               |
+| `client_secret`                  | API Secret                                   | True                  | Authentication  | Can be received through the Developer Portal by selecting Credentials and pressing the Create App button. |               |
+| `time_zone`                      | Time Zone                                    | False                 | String          | The timezone used in ObserveIT.                                                                           | `UTC`         |
+| `events_per_poll`                | Events Per Poll                              | False                 | Number          | Max number of records to return per poll. Note: a large fetch may cause timeout errors.                   | `100`         |
+| `initial_event_fetch_period`     | Initial Event Fetch Period in Days           | False                 | Number          | Number of days in the past from which events will be initially retrieved.                                 | `7`           |
+| `report_type`                    | Report Type                                  | True                  | String          | The report type to poll. One of:<br>`alert_v0`,<br>`audit_configuration_v0`,<br>`audit_logins_v0`,<br>`audit_saved_sessions_v0`,<br>`audit_session_playback_v0`,<br>`system_events_v0`,<br>`user_command_activity_with_output_v0`,<br>`user_command_output_stream_v0`,<br>`user_dba_activity_v0`,<br>`user_file_activity_v0`,<br>`user_interface_activity_v0`,<br>`user_messaging_actions_activity_v0`,<br>`user_session_v0`. |               |
+| `piis_to_exclude`                | Personal Identifiable Information to Exclude | False                 | String          | Comma-separated list of Personal Identifiable Information (PII) to exclude.                               | `loginName`, `secondaryLoginName`, `endpointName`, `remoteHostName`, `windowTitle`, `accessedUrl`, `domainName`, `secondaryDomainName`, `remoteAddress`, `sqlUserName`, `sessionServerName`, `sessionLoginName`, `savedSessionName`, `operatorUsername`, `operatorDomainName`, `userName`, `machineName` |
+| `sleep_time_in_seconds`          | Sleep Time in Seconds                        | False                 | Number          | The downtime for the connector after it is in sync with the server (Min: 0).                              | `20`          |
+| `debug_mode`          | Debug Mode                        | False                 | String          | Set to `true` in case you want to get debug logs as event logs.                              | `false`          |
 
 # How to Generate Client ID and Client Secret
 1. Log on to your ObserveIT instance through: https://\<MyObserveIT>/ObserveIT.
@@ -64,3 +57,9 @@ If you want to ingest data from an endpoint using Universal Rest API Protocol, c
 10. To fix any errors, click Configure Protocol Parameters. Configure the parameters and click Test Protocol Parameters.
 
 11. Click Finish
+
+- The log source identifier must be identical to the inserted `hostname`.
+- Copy the Workflow XML into the Workflow field.
+- Populate the Workflow Parameters according to the table above and copy it into the Workflow Parameters Values field.
+- Make sure to turn off the Coalescing Events to avoid grouping of the events on the basis of Source and Destination IP.
+- It is advised to open an individual log source for report types that fetch large amount of data.

@@ -1,0 +1,1 @@
+# Reflectiz Platform API connector for QRadar

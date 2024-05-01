@@ -7,32 +7,37 @@
 
 
 ## IBM QRadar Universal Cloud Connector
-The QRadar Universal Cloud Rest API is a powerful feature that can help security teams enhance their visibility by easily gathering data from a wide range of REST API cloud-based applications and services. With the Universal Cloud REST API Protocol, users can create log sources for REST API compatible data sources that are currently not supported by IBM. This means that organizations can quickly and easily connect to cloud-based or on-premise endpoints that were previously inaccessible.
+The QRadar Universal Cloud REST API is a powerful feature that helps enhance visibility by easily gathering data from a wide range of REST API cloud-based applications and services. With the Universal Cloud REST API Protocol, users can create log sources for REST API compatible data sources that are not currently supported officially by IBM. This allows organizations to quickly and easily connect to cloud-based or on-premise endpoints that were previously inaccessible.
 
-The Universal Cloud REST API Protocol also includes pre-configured workflows for select data sources, which can substantially reduce the time required to create new log sources. Furthermore, users can tailor the data to their specific use cases by defining normalized properties, classifying event data, and extracting custom event properties using the DSM Editor. By connecting their data sources with the Universal Cloud REST API Protocol, organizations can augment their threat detection abilities, and analysts can easily access key investigation information in their workspace using QRadar's Analyst Workflow, minimizing the need to navigate elsewhere for additional context. Overall, the QRadar Universal Cloud Rest API is a powerful tool that can help organizations adapt to the ever-changing digital landscape and improve their security posture.
+The Universal Cloud REST API Protocol includes pre-configured workflows for select data sources, which can significantly reduce the time required to create new log sources. Moreover, users can tailor the data to their specific use cases by defining normalized properties, classifying event data, and extracting custom event properties using the DSM Editor.
+By connecting their data sources with the Universal Cloud REST API Protocol, organizations can enhance their threat detection capabilities, and analysts can easily access critical investigation information in their workspace using QRadar's Analyst Workflow. This minimizes the need to navigate elsewhere for additional context. In summary, the QRadar Universal Cloud REST API is a powerful tool that helps organizations adapt to the ever-changing digital landscape and improve their security posture.
 
 
 ## Supported version
-[![7.3.2 QRadar](https://img.shields.io/badge/QRadar-%20v7.3.2-yellow.svg)](https://opensource.org/licenses/)
-[![7.3.2 QRadar](https://img.shields.io/badge/QRadar_Universal_Cloud_REST_API-%20v2-yellow.svg)](https://opensource.org/licenses/)
+Universal Cloud REST API protocol is supported on QRadar 7.3.2 or later, and the QRadar Log Source Management app must be installed.
+- See: [Universal Cloud REST API protocol - IBM Documentation](https://www.ibm.com/docs/en/qsip/7.4?topic=configuration-universal-cloud-rest-api-protocol)
 
 
 ## Terminology
-#### As you configure the Universal Cloud REST API, familiarize yourself with the following terms:
+#### Universal Cloud Rest Api terms:
 
-Workflow: An XML document that outlines the event retrieval process. It defines one or more parameters, which can have assigned values within the XML or derive values from the Workflow Parameter Values XML document. The Workflow comprises several actions that run sequentially. When the Workflow is initiated, the parameter values are included in the State. As the Workflow runs, actions can access and modify the State.
+Workflow: An XML document that outlines the event retrieval process. It defines one or more parameters, which can have assigned values within the XML or derive values from the Workflow Parameter Values XML document. The Workflow consists of several actions that run sequentially. When the Workflow is initiated, the parameter values are included in the State. As the Workflow progresses, actions can access and modify the State.
 
-Workflow Parameter Values: The input parameters for a Workflow instance, stored in an XML file. These values are a set of key/value pairs, and each key must match a parameter defined in the corresponding Workflow.
+Workflow Parameter Values: The input parameters for a Workflow instance, stored in an XML file. These values consist of key/value pairs, and each key must match a parameter defined in the corresponding Workflow.
+
 
 ## Authors
-At QMasters, we believe in giving back to the community and our customers. As a team that has worked extensively with SIEMs since the start of our journey, we understand the importance of data in effective threat detection and response. We work closely with our customers and vendors to provide them with the tools they need to make the most of their security data. By developing and sharing tools like the QRadar Universal Cloud Rest API, we aim to contribute to the wider security community and help organizations improve their security posture.
+At QMasters, we believe in giving back to the community and our customers. As a team that has worked extensively with SIEMs since the beginning of our journey, we understand the importance of data for effective threat detection and response. We collaborate closely with our customers and vendors to provide them with the tools they need to maximize their security data. By developing and sharing tools like the QRadar Universal Cloud REST API, we aim to contribute to the broader security community and help organizations enhance their security posture. Visit us at: www.qmasters.co 
+
 
 ## Contributing
-We welcome contributions from the community to improve the QRadar Universal Cloud Rest API. If you have ideas for new features, improvements to existing features, or bug fixes, please feel free to submit a pull request.
+We welcome contributions from the community to improve QRadar Universal Cloud REST API. 
+If you have ideas for new features, enhancements to existing features, or bug fixes, please feel free to submit a pull request.
 
-Before submitting a pull request, please make sure to review our contributing guidelines, which outline the process for submitting contributions and provide some helpful tips on how to get started.
+Before submitting a pull request, make sure to review our contributing guidelines, which outline the process for submitting contributions and offer helpful tips on how to get started.
 
-Thank you for helping to improve the QRadar Universal Cloud Rest API and contribute to the security community!
+Thank you for helping improve the QRadar Universal Cloud REST API and contributing to the security community!
+
 
 ## Useful Links
 

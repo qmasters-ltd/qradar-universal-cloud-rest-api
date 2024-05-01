@@ -1,0 +1,8 @@
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+    <!-- "hostname" - Reflectiz API host (default="https://dashboard.reflectiz.com") -->
+    <Value name="hostname" value="https://dashboard.reflectiz.com"/>
+
+    <!-- "api_token" - Reflectiz API token for QRadar (required) -->
+    <Value name="api_token" value="<insert your api token>"/>
+</WorkflowParameterValues>

@@ -23,7 +23,7 @@
         <!-- Prepare the end date filter, which is the current time. -->
         <FormatDate pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" timeZone="${/time_zone}" savePath="/end_date" />
 
-        <!-- Get Alerts -->				
+        <!-- Get Alerts -->
         <CallEndpoint url="${/api_host}/v1/alert/search" method="POST" savePath="/get_alerts" >
             <RequestHeader name="x-api-key" value="${/api_key}" />
             <RequestHeader name="x-api-secret" value="${/api_secert}" />
@@ -79,11 +79,14 @@
 
                 <!-- Update the bookmark -->
                 <ParseDate pattern="yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'" timeZone="${/time_zone}" date="${max(/get_alerts/body/records/createdAt)}" savePath="/last_event_time" />
-            <Log type="info" message="${/last_event_time}"/>
+                <Set path="/lastAlert" value="${/last_event_time}"/>
                 <Set path="/bookmark" value="${/last_event_time + 1}" />
-
             </If>
-    </Actions>	
+            <Else>
+                <Set path="/heartBeatLog" value="The connection to the Fortress API was successfully established; however, there are no new alerts available for retrieval at this moment. The last alert received was at: ${/lastAlert} (UTC)." />
+                <PostEvent path="/heartBeatLog" source="${/api_host}" />
+            </Else>
+    </Actions>
     <Tests>
         <DNSResolutionTest host="${/api_host}" />
         <TCPConnectionTest host="${/api_host}" />

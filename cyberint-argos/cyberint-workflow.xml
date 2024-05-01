@@ -1,10 +1,11 @@
 <Workflow name="Qmasters CyberInt workflow for QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
     <Parameters>
-        <Parameter name="hostname" label="Host Name" required="true" />
-        <Parameter name="api_key" label="API Key" required="true" secret="true" />
+        <Parameter name="domainName" label="Domain Name" required="true" />
+        <Parameter name="apiKey" label="API Key" required="true" secret="true" />
         <Parameter name="severity" label="Severity" required="false" />
         <Parameter name="status" label="Status" required="false" default="false" />
-        <Parameter name="page_size" label="Page Size" required="false" default="false" />
+        <Parameter name="pageSize" label="Page Size" required="false" default="false" />
+        <Parameter name="timeZone" label="Time Zone" required="false" default="UTC" />
     </Parameters>
 
     <Actions>
@@ -14,34 +15,35 @@
         <!-- Initialize the risingValue filter for the first run. -->
         <Initialize path="/bookmark" value="${time() - 604800000}" />
 
-        <!-- Prepare the start date filter, based on the current bookmark -->
-        <FormatDate pattern="yyyy-MM-dd'T'HH:mm:ss" time="${/bookmark}" timeZone="UTC" savePath="/start_date" />
+        <!-- Prepare the start time filter, based on the current bookmark -->
+        <FormatDate pattern="yyyy-MM-dd'T'HH:mm:ss" time="${/bookmark}" timeZone="${/timeZone}" savePath="/startTime" />
 
-        <!-- Prepare the end date filter, which is the current time. -->
-        <FormatDate pattern="yyyy-MM-dd'T'HH:mm:ss" timeZone="UTC" savePath="/end_date" />
+        <!-- Prepare the end time filter, which is the current time. -->
+        <FormatDate pattern="yyyy-MM-dd'T'HH:mm:ss" timeZone="${/timeZone}" savePath="/endTime" />
 
-        <!-- Get Alerts -->				
-        <CallEndpoint url="${/hostname}/alert/api/v1/alerts" method="POST" savePath="/get_alerts" >
-            <RequestHeader name="Cookie" value="access_token=${/api_key}; Path=/;" />
+        <!-- Get Alerts -->
+        <CallEndpoint url="https://${/domainName}.cyberint.io/alert/api/v1/alerts" method="POST" savePath="/getAlerts" >
+            <RequestHeader name="Cookie" value="access_token=${/apiKey}; Path=/;" />
+            <RequestHeader name="x-integration-source" value="QRADAR;${/domainName}" />
             <RequestBody type="application/json" encoding="UTF-8">
                 {
                     "page": 1,
-                    "size": ${/page_size},
+                    "size": ${/pageSize},
                     "include_csv_attachments_as_json_content": true,
                     "filters":
-                        {   
-                            "status": 
+                        {
+                            "status":
                                 [
                                     ${/status}
                                 ],
-                            "severity": 
+                            "severity":
                                 [
                                     ${/severity}
                                 ],
-                            "created_date": 
+                            "update_date":
                                 {
-                                    "from": "${/start_date}",
-                                    "to": "${/end_date}"
+                                    "from": "${/startTime}",
+                                    "to": "${/endTime}"
                                 }
                         }
                 }
@@ -49,38 +51,47 @@
         </CallEndpoint>
 
         <!-- Handle Errors -->
-        <If condition="/get_alerts/status_code != 200">
-            <If condition="/get_alerts/status_code = 403" >
+        <If condition="/getAlerts/status_code != 200">
+            <If condition="/getAlerts/status_code = 403" >
+                <Log type="ERROR" message="The user or team account does not have access to the endpoint/feature/resource."/>
                 <Abort reason="The user or team account does not have access to the endpoint/feature/resource." />
             </If>
-            <If condition="/get_alerts/status_code = 401" >
+            <If condition="/getAlerts/status_code = 401" >
+                <Log type="ERROR" message="Invalid Cyberint API token or token expired."/>
                 <Abort reason="Invalid token or token expired." />
             </If>
 
-            <If condition="/get_alerts/status_code = 422" >
+            <If condition="/getAlerts/status_code = 422" >
+                <Log type="ERROR" message="Bad input parameter. The response body is a plaintext message with more information."/>
                 <Abort reason="Bad input parameter. The response body is a plaintext message with more information." />
             </If>
 
-            <If condition="/get_alerts/status_code >= 500" >
+            <If condition="/getAlerts/status_code >= 500" >
+                <Log type="ERROR" message="Cyberint API is not available"/>
                 <Abort reason="Cyberint API is not available" />
             </If>
 
-            <Abort reason="Cyberint abort reason:  ${/get_alerts}" />
+            <Log type="ERROR" message="Cyberint abort reason: ${/getAlerts}"/>
         </If>
 
         <!-- Post Events, if any -->
-            <If condition="count(/get_alerts/body/alerts) > 0">
-                <PostEvents path="/get_alerts/body/alerts" source="${/hostname}" />
+        <If condition="count(/getAlerts/body/alerts) > 0">
+            <PostEvents path="/getAlerts/body/alerts" source="${/domainName}" />
 
-                <!-- Update the bookmark -->
-                <ParseDate pattern="yyyy-MM-dd'T'HH:mm:ss" timeZone="UTC" date="${max(/get_alerts/body/alerts/created_date)}" savePath="/last_event_time" />
-                <Set path="/bookmark" value="${/last_event_time + 1}" />
-            </If>
-    </Actions>	
+            <!-- Update the bookmark -->
+            <ParseDate pattern="yyyy-MM-dd'T'HH:mm:ss" timeZone="${/timeZone}" date="${max(/getAlerts/body/alerts/update_date)}" savePath="/lastAlertsTime" />
+            <Set path="/lastAlert" value="${/lastAlertsTime}" />
+            <Set path="/bookmark" value="${/lastAlertsTime + 1000}" />
+        </If>
+        <Else>
+            <Set path="/heartBeatLog" value="The connection to the Cyberint API was successfully established; however, there are no new alerts available for retrieval at this moment. The last alert received was at: ${/lastAlert} (UTC)." />
+            <PostEvent path="/heartBeatLog" source="${/domainName}" />
+        </Else>
+    </Actions>
     <Tests>
-        <DNSResolutionTest host="${/hostname}" />
-        <TCPConnectionTest host="${/hostname}" />
-        <SSLHandshakeTest host="${/hostname}" />
-        <HTTPConnectionThroughProxyTest url="${/hostname}" expectedResponseStatus="404" />
+        <DNSResolutionTest host="${/domainName}.cyberint.io" />
+        <TCPConnectionTest host="https://${/domainName}.cyberint.io" />
+        <SSLHandshakeTest host="https://${/domainName}.cyberint.io" />
+        <HTTPConnectionThroughProxyTest url="${/domainName}" expectedResponseStatus="404" />
     </Tests>
 </Workflow>

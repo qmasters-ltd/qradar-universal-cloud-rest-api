@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+	<!-- "orgID" - Atlassian Organization ID.-->
+	<Value name="orgID" value="<insert your Atlassian Organization ID>"/>
+	<!-- "apiToken" - Atlassian API token for QRadar (required) -->
+	<Value name="apiToken" value="<insert your API token>"/>
+
+	<!-- "query" - Single query term for searching events. (optional) -->
+	<Value name="query" value=""/>
+
+	<!-- "timeZone" - select your time zone (Default=UTC). (optional) -->
+	<Value name="timeZone" value="UTC"/>
+	<!-- "startTime" - Specify the start time to retrieve logs from. Provide the time in epoch time with milliseconds (e.g., 1693309396000). The default is events from the past 1 hour. (optional) -->
+	<Value name="startTime" value=""/>
+
+</WorkflowParameterValues>

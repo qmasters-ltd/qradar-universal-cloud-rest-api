@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+	<!-- "orgName" - GitHub Organization Name. in case the enterpriseName is configured leave the value empty. -->
+	<Value name="orgName" value=""/>
+	<!-- "enterpriseName" - GitHub Enterprise Name. in case the orgName is configured leave the value empty.-->
+	<Value name="enterpriseName" value=""/>
+	<!-- "apiToken" - GitHub API token for QRadar (required) -->
+	<Value name="apiToken" value="<insert your token>"/>
+
+	<!-- "phrase" - A search phrase. (optional) -->
+	<Value name="phrase" value=""/>
+	<!-- "include" - The event types to include: web, git, all. (Default=all). (optional) -->
+	<Value name="include" value="all"/>
+
+	<!-- "perPage" - The number of results per page (max 100). (Default=30). (optional) -->
+	<Value name="perPage" value="100"/>
+	<!-- "timeZone" - select your time zone (Default=UTC). (optional) -->
+	<Value name="timeZone" value="UTC"/>
+	<!-- "startTime" - Specify the start time to retrieve logs from. Provide the time in epoch time with milliseconds (e.g., 1693309396000). The default is logs from the past 1 hour. (optional) -->
+	<Value name="startTime" value=""/>
+
+</WorkflowParameterValues>

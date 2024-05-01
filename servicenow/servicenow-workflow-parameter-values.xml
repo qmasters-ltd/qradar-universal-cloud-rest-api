@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+	<!-- [identifier] [REQUIRED] - The log source identifier to post the events to. -->
+	<Value name="identifier" value="sys_audit_role"/>
+	<!-- [instance_name] [REQUIRED] - . -->
+	<Value name="instance_name" value="xxx"/>
+	<!-- [client_id] [REQUIRED] -->
+	<Value name="client_id" value="xxx"/>
+	<!-- [client_secret] [REQUIRED] -->
+	<Value name="client_secret" value="xxx"/>
+	<!-- [username] [REQUIRED] -->
+	<Value name="username" value="xxx@xxxx.com"/>
+	<!-- [password] [REQUIRED] -->
+	<Value name="password" value="xxx"/>
+	<!-- [time_zone] [OPTIONAL] [DEFAULT=UTC] - The time zone to be used. -->
+	<Value name="time_zone" value="UTC"/>
+	<!-- [events_per_fetch] [OPTIONAL] [DEFAULT=1000] - Max number of records to return per fetch. Note: a large fetch may cause timeout errors. -->
+	<Value name="events_per_fetch" value="1000"/>
+	<!-- [initial_fetch_period] [OPTIONAL] [DEFAULT=7] - Number of days in the past from which events will be initially retrieved. -->
+	<Value name="initial_fetch_period" value="7"/>
+	<!-- [table_to_fetch] [REQUIRED] Table name to fetch events from. -->
+	<Value name="table_to_fetch" value="sys_audit_role"/>
+	<!-- [pagination_time_field] [REQUIRED] The updated time field name for pagination. -->
+	<Value name="pagination_time_field" value="sys_updated_on"/>
+	<!-- [sleep_time_in_seconds] [OPTIONAL] [DEFAULT=20] - The downtime for the connector after it is in sync with the server (Min: 0). -->
+	<Value name="sleep_time_in_seconds" value="20"/>
+</WorkflowParameterValues>

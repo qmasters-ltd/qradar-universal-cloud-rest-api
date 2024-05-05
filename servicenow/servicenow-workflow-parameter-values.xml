@@ -14,8 +14,8 @@
 	<Value name="password" value="xxx"/>
 	<!-- [time_zone] [OPTIONAL] [DEFAULT=UTC] - The time zone to be used. -->
 	<Value name="time_zone" value="UTC"/>
-	<!-- [events_per_fetch] [OPTIONAL] [DEFAULT=1000] - Max number of records to return per fetch. Note: a large fetch may cause timeout errors. -->
-	<Value name="events_per_fetch" value="1000"/>
+	<!-- [events_per_fetch] [OPTIONAL] [DEFAULT=10000] - Max number of records to return per fetch. Note: a large fetch may cause timeout errors. -->
+	<Value name="events_per_fetch" value="10000"/>
 	<!-- [initial_fetch_period] [OPTIONAL] [DEFAULT=7] - Number of days in the past from which events will be initially retrieved. -->
 	<Value name="initial_fetch_period" value="7"/>
 	<!-- [table_to_fetch] [REQUIRED] Table name to fetch events from. -->

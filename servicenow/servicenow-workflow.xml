@@ -7,7 +7,7 @@
 		<Parameter name="client_id" label="Client ID" description="ServiceNow client ID." required="true" secret="true" />
 		<Parameter name="client_secret" label="Client secret" description="ServiceNow client secret." required="true" secret="true" />
         <Parameter name="time_zone" label="Time Zone" description="The timezone to be used." default="UTC" />
-        <Parameter name="events_per_fetch" label="Events Per Fetch" description="Max number of records to return per fetch. Note: a large fetch may cause timeout errors." default="100" />
+        <Parameter name="events_per_fetch" label="Events Per Fetch" description="Max number of records to return per fetch. Note: a large fetch may cause timeout errors." default="10000" />
         <Parameter name="initial_fetch_period" label="Initial Event Fetch Period in Days" description="Number of days in the past from which events will be initially retrieved." default="7" />
         <Parameter name="table_to_fetch" label="Table to Fetch" description="Table name to fetch events from." required="true" />
         <Parameter name="pagination_time_field" label="Pagination Time Field" description="The updated time field name for pagination." default="sys_updated_on" required="true" />
@@ -19,7 +19,8 @@
         <Set path="/fetch_counter" value="1" />
         <Set path="/events_count" value="0" />
         <Set path="/sleep_time" value="${/sleep_time_in_seconds * 1000}"/>
-        <Initialize path="/time_format" value="yyyy-MM-dd HH:mm:ss" />
+        <Initialize path="/time_format" value="dd/MM/yyyy HH:mm:ss" />
+        <Initialize path="/time_format_sn" value="yyyy-MM-dd HH:mm:ss" />
 
         <!-- Initialize the last updated time filter for the first run. -->
         <Initialize path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />
@@ -51,15 +52,22 @@
 
         <!-- Pagination handling: aslong as events are returned, keep fetching data. -->
         <While condition="true">
-            <Set path="/start_time" value="${time()}" />
-            <Log type="INFO" message="[ServiceNow]: Running fetch number ${/fetch_counter} for '${/table_to_fetch}'..." />
+            <Set path="/end_time" value="${time()}" />
+            <FormatDate pattern="${/time_format_sn}" timeZone="${/time_zone}" time="${/end_time}" savePath="/end_time" />
+
+            <Set path="/start_time" value="${/bookmark}" />
+            <FormatDate pattern="${/time_format_sn}" timeZone="${/time_zone}" time="${/start_time}" savePath="/start_time" />
+
+            <Log type="INFO" message="[ServiceNow]: Running fetch number ${/fetch_counter} for '${/table_to_fetch}'. Start time: '${/start_time}', End time: '${/end_time}'." />
 
             <!-- Get the reports. -->
             <CallEndpoint url="https://${/instance_name}.service-now.com/api/now/table/${/table_to_fetch}" method="GET" savePath="/response" >
                 <!-- <SSLConfiguration allowUntrustedServerCertificate="true" /> -->
                 <BearerAuthentication token="${/bearer_token}" />
                 <QueryParameter name="sysparm_limit" value="${/events_per_fetch}" />
-                <QueryParameter name="sysparm_query" value="'${/pagination_time_field}':'${/bookmark}'" />
+                <QueryParameter name="sysparm_display_value" value="true
+                " />
+                <QueryParameter name="sysparm_query" value="${/pagination_time_field}BETWEENjavascript:gs.dateGenerate('${/start_time}')@javascript:gs.dateGenerate('${/end_time}')^ORDERBY${/pagination_time_field}" />
             </CallEndpoint>
 
             <If condition="/response/status_code = 200">
@@ -76,21 +84,31 @@
                     <PostEvents path="/events" source="${/identifier}" />
                     <!-- Update the last updated time for next run. -->
                     <Set path="/last_index" value="${/events_count - 1}"/>
+                    <Log type="INFO" message="[ServiceNow]: New last updated time: ${/events[${/last_index}]/${/pagination_time_field}}" />
 
                     <ParseDate pattern="${/time_format}" timeZone="${/time_zone}" date="${/events[${/last_index}]/${/pagination_time_field}}" savePath="/last_bookmark" />
-                    <FormatDate pattern="${/time_format}" timeZone="${/time_zone}" time="${/last_bookmark}" savePath="/bookmark" />
-                    <ParseDate pattern="${/time_format}" timeZone="${/time_zone}" date="${/bookmark}" savePath="/bookmark" />
+                    <FormatDate pattern="${/time_format}" timeZone="${/time_zone}" time="${/last_bookmark}" savePath="/bookmark" /> 
+                    <ParseDate pattern="${/time_format}" timeZone="${/time_zone}" date="${/bookmark}" savePath="/bookmark" /> 
 
+                    <!-- <Set path="/bookmark" value="${/bookmark + 10800000}"/> -->
                     <Log type="INFO" message="[ServiceNow]: '${/pagination_time_field}' time for '${/table_to_fetch}' updated to: ${/bookmark}" />
+                
+                    <Log type="INFO" message="[ServiceNow]: Done fetch period" />
+
+                    <If condition="${/events_per_fetch} > ${/events_count}">
+                        <Log type="INFO" message="[ServiceNow]: Connecter is in sync with ServiceNow server, reseting fetch counter and going to sleep for ${/sleep_time_in_seconds} seconds..." />
+                        <Set path="/fetch_counter" value="1" />
+
+                        <Set path="/bookmark" value="${/bookmark + 1000}"/>
+                        <Log type="INFO" message="[ServiceNow]: Add 1 second to bookmark. Updated to: ${/bookmark}" />
+                        <Sleep duration="${/sleep_time}" />
+                    </If>
                 </If>
-
-                <Log type="INFO" message="[ServiceNow]: Done fetch period, total time in milliseconds is: ${time() - /start_time}" />
-
-                <If condition="${/events_per_fetch} > ${/events_count}">
+                <Else> 
                     <Log type="INFO" message="[ServiceNow]: Connecter is in sync with ServiceNow server, reseting fetch counter and going to sleep for ${/sleep_time_in_seconds} seconds..." />
                     <Set path="/fetch_counter" value="1" />
                     <Sleep duration="${/sleep_time}" />
-                </If>
+                </Else>
             </If>
             <ElseIf condition="/response/status_code = 401">
                 <!-- If the bearer token has expired fetch a new one.  -->

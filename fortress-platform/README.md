@@ -50,8 +50,8 @@ The parameters XML document specifies the user settings for this log source, inc
 Parameter                           | Name | Default Value | Type | Required (True/False) | Description
 ---                                 | --- | --- | --- |--- |---
 api_host                            | API Host | https://\<your instance> | String | True | URL for the instance.
+api_id                              | API ID | False | Authentication | True | Fortress API id for QRadar
 api_key                             | API Key | False | Authentication | True | Fortress API key for QRadar
-api_secret                          | API Secret | False | Authentication | True | Fortress API secret for QRadar
 severity                            | Severity | "CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE" | array of strings | False | this parameter is an array of strings used to filter alerts by severity.
 status                              | Status | "OPEN", "CLOSED", "DISMISSED", "QUARANTINED" | array of strings | False | this parameter is an array of strings used to filter alerts by status.
 service_type                        | Service Type | "EDP", "MAIL", "CLOUD_STORAGE", "VMDR" | array of strings | False | this parameter is an array of strings used to filter alerts by service type.

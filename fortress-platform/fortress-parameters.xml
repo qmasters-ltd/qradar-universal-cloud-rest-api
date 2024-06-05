@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+	<!-- "identifier" - The log source identifier to post the events to (required). -->
+	<Value name="identifier" value="fortress"/>
 
-	<!-- "api_host" - Fortress API host (Default="https://develop-api.qfortress.ai")-->
-	<Value name="api_host" value="<insert your api host here>"/>
+	<!-- "api_host" - Fortress API host (Default="api-external.fortresscyber.io")-->
+	<Value name="api_host" value="api-external.fortresscyber.io"/>
+	<!-- "api_id" - Fortress API ID for QRadar (required) -->
+	<Value name="api_id" value=""/>
 	<!-- "api_key" - Fortress API key for QRadar (required) -->
-	<Value name="api_key" value="<insert your api key here>"/>
-	<!-- "api_secert" - Fortress API secret for QRadar (required) -->
-	<Value name="api_secert" value="<insert your api secret here>"/>
+	<Value name="api_key" value=""/>
 
 	<!-- "severity" - Fortress alert severity, can be multiple separated by commas, allowed values: CRITICAL,HIGH,MEDIUM,LOW,NONE. (Default=All). (optional) -->
 	<Value name="severity" value='"CRITICAL","HIGH","MEDIUM","LOW","NONE"'/>

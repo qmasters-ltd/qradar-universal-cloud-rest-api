@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+<!-- [identifier] [REQUIRED] - The log source identifier to post the events to. -->
+<Value name="identifier" value="Reco-AI"/>
+<!-- [instance_name] [REQUIRED] - . -->
+<Value name="base_url" value="solaredge.reco.ai"/>
+<!-- [api_key] [REQUIRED] -->
+<Value name="api_key" value="K2hdPOefNtiBhlwfjPnQR1KGjusnDA4gZabWFxhTtHwVwyuc3fW1F4Gomn6tITeqvahax00"/>
+<!-- [time_zone] [OPTIONAL] [DEFAULT=UTC] - The time zone to be used in Reco-AI. -->
+<Value name="time_zone" value="GMT+3"/>
+<!-- [initial_fetch_period] [OPTIONAL] [DEFAULT=7] - Number of days in the past from which events will be initially retrieved. -->
+<Value name="initial_fetch_period" value="7"/>
+</WorkflowParameterValues>

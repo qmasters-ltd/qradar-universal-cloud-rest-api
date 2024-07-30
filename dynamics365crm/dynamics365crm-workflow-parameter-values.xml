@@ -3,11 +3,11 @@
 	<!-- [identifier] [REQUIRED] - The log source identifier to post the events to. -->
 	<Value name="identifier" value=""/>
 	<!-- [base_url] [REQUIRED] - Base URL.-->
-	<Value name="base_url" value=""/>
+	<Value name="base_url" value="ddd"/>
 	<!-- [username] [REQUIRED] - user name. -->
-	<Value name="username" value=""/>
+	<Value name="username" value="dd"/>
 	<!-- [password] [REQUIRED] - password. -->
-	<Value name="password" value=""/>
+	<Value name="password" value="ddd"/>
 	<!-- [events_per_fetch] [OPTIONAL] [DEFAULT=1000] - Max number of records to return per fetch. Note: a large fetch may cause timeout errors. -->
 	<Value name="events_per_fetch" value="1000"/>
 	<!-- [initial_fetch_period] [OPTIONAL] [DEFAULT=7] - Number of days in the past from which events will be initially retrieved. -->

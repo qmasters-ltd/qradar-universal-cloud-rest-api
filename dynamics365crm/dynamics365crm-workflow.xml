@@ -15,7 +15,7 @@
         <Set path="/fetch_counter" value="1" />
         <Set path="/events_count" value="0" />
         <Set path="/sleep_time" value="${/sleep_time_in_seconds} * 1000"/>
-        <Initialize path="/time_format" value="yyyy-MM-ddTHH:mm:ssZ" />
+        <Initialize path="/time_format" value="yyyy-MM-dd HH:mm:ss" />
 
         <!-- Initialize the last updated time filter for the first run. -->
         <Initialize path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />

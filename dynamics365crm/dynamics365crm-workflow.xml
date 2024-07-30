@@ -35,11 +35,12 @@
             <!-- Get the audits. -->
             <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
                 <SSLConfiguration allowUntrustedServerCertificate="true" />
-                <BasicAuthentication username="${/username}" password="${/password}" />
+                <DigestAuthentication username="${/username}" password="${/password}" />
                 <QueryParameter name="$orderby" value="createdon asc" />
                 <QueryParameter name="$filter" value="createdon gt ${/bookmark}" />
                 <RequestHeader name="Prefer" value="odata.include-annotations=“*”" />
                 <RequestHeader name="Prefer" value="odata.maxpagesize=${/events_per_fetch}}" />
+                <RequestHeader name="OData-Version" value="4.0" />
             </CallEndpoint>
 
             <Log type="INFO" message="[dynamics365crm]: Done fetching audits, got status code: ${/audits_response/status_code}." />

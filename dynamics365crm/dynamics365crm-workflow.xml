@@ -19,6 +19,7 @@
 
         <!-- Initialize the last updated time filter for the first run. -->
         <Initialize path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />
+        <FormatDate pattern="${/time_format}" timeZone="UTC" time="${/bookmark}" savePath="/bookmark" />
 
         <Log type="INFO" message="[dynamics365crm]: Start fetching events..." />
         <Log type="INFO" message="[dynamics365crm]: Username: ${/username}. Start time: ${/bookmark}." />

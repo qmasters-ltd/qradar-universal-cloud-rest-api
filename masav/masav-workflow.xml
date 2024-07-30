@@ -1,0 +1,78 @@
+<Workflow name="Qmasters Masav" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="identifier" label="Identifier" description="The log source identifier to post the events to." required="true" />
+        <Parameter name="base_url" label="Base URL" description="Masav base URL." required="true" />
+        <Parameter name="username" label="Username" description="Masav user name." required="true" />
+        <Parameter name="password" label="Password" description="Masav user's password." required="true" secret="true" />
+        <Parameter name="events_per_fetch" label="Events Per Fetch" description="Max number of records to return per fetch. Note: a large fetch may cause timeout errors." default="100" />
+        <Parameter name="initial_fetch_period" label="Initial Event Fetch Period in Days" description="Number of days in the past from which events will be initially retrieved." default="7" />
+        <Parameter name="sleep_time_in_seconds" label="Sleep Time in Seconds" description="The downtime for the connector after it is in sync with the server (Min: 0)." default="120" />
+    </Parameters>
+
+    <Actions>
+        <!-- Clear the log source status before a new workflow run starts. -->
+        <ClearStatus />
+        <Set path="/fetch_counter" value="1" />
+        <Set path="/events_count" value="0" />
+        <Set path="/sleep_time" value="${/sleep_time_in_seconds * 1000}"/>
+        <Initialize path="/time_format" value="yyyy-MM-ddTHH:mm:ssZ" />
+
+        <!-- Initialize the last updated time filter for the first run. -->
+        <Initialize path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />
+
+        <Log type="INFO" message="[Masav]: Start fetching events..." />
+        <Log type="INFO" message="[Masav]: Username: ${/username}. Start time: ${/bookmark}." />
+
+        <!-- Initial fetch -->
+        <Set path="/next_link" value="https://${/base_url}/api/data/v9.1/audits?$orderby=createdon asc&$filter=createdon gt ${/bookmark}" />
+
+        <!-- Loop to handle pagination -->
+        <While condition="not empty(/next_link)">
+            
+            <Log type="INFO" message="[Boomi]: Running fetch number ${/fetch_counter} for AuditLogs..." />
+            <Log type="INFO" message="[Masav]: Fetching audits from URL: ${/next_link}" />
+
+            <!-- Get the audits. -->
+            <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
+                <NTLMAuthentication username="${/username}" password="${/password}" />
+                <Header name="Prefer" value="odata.include-annotations=“*”" />
+                <Header name="Prefer" value="odata.maxpagesize=${/events_per_fetch}}" />
+            </CallEndpoint>
+
+            <Log type="INFO" message="[Masav]: Done fetching audits, got status code: ${/audits_response/status_code}." />
+
+            <If condition="/audits_response/status_code = 200">
+                <!-- Handle a successful response. -->
+                <XPathQuery xmlPath="/audits_response/body" xPathQuery="//value" savePath="/events" />
+                <XPathQuery xmlPath="/audits_response/body" xPathQuery="//@odata.nextLink" singleton="true" savePath="/next_link" />
+
+                <Set path="/events_count" value="${count(/events)}" />
+                <Log type="INFO" message="[Masav]: Fetched ${/events_count} audits." />
+
+                <If condition="${/events_count} > 0">
+                    <Set path="/fetch_counter" value="${/fetch_counter + 1}" />
+
+                    <Log type="INFO" message="[Masav]: Posting ${/events_count} fetched events..." />
+                    <!-- <PostEvents path="/events" source="${/identifier}" /> -->
+
+                    <!-- Update bookmark for the next run. -->
+                    <Set path="/bookmark" value="${/events[${/last_index}]/createdon}" />
+                    <Log type="INFO" message="[Masav]: Max events date ${/bookmark}." />
+
+                </If>
+            </If>
+
+            <Else>
+                <Log type="ERROR" message="[Masav]: status code ${/audits_response/status_code}, abort to get events. Reason: ${/audits_response/body}" />
+                <Abort reason="${/audits_response}" />
+            </Else>
+
+        </While>
+    </Actions>
+
+    <Tests>
+        <DNSResolutionTest host="https://crm-fe1-prd-hln.masav.local" />
+        <TCPConnectionTest host="https://crm-fe1-prd-hln.masav.local/MasavCrm/api/data/v9.1/audits" />
+        <HTTPConnectionThroughProxyTest url="https://crm-fe1-prd-hln.masav.local/MasavCrm/api/data/v9.1/audits" expectedResponseStatus="200" />
+    </Tests>
+</Workflow>

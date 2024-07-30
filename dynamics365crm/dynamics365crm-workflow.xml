@@ -35,8 +35,8 @@
             <!-- Get the audits. -->
             <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
                 <BasicAuthentication username="${/username}" password="${/password}" />
-                <Header name="Prefer" value="odata.include-annotations=“*”" />
-                <Header name="Prefer" value="odata.maxpagesize=${/events_per_fetch}}" />
+                <RequestHeader name="Prefer" value="odata.include-annotations=“*”" />
+                <RequestHeader name="Prefer" value="odata.maxpagesize=${/events_per_fetch}}" />
                 <QueryParameter name="$orderby" value="createdon asc" omitIfEmpty="true" />
                 <QueryParameter name="$filter" value="createdon gt ${/bookmark}" omitIfEmpty="true" />
             </CallEndpoint>

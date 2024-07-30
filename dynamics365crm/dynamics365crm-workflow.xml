@@ -19,10 +19,11 @@
 
         <!-- Initialize the last updated time filter for the first run. -->
         <Initialize path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />
-        <FormatDate pattern="${/time_format}" timeZone="UTC" time="${/bookmark}" savePath="/bookmark" />
+        <Set path="/start_time" value="${/bookmark}" />
+        <FormatDate pattern="${/time_format}" timeZone="UTC" time="${/bookmark}" savePath="/start_time" />
 
         <Log type="INFO" message="[dynamics365crm]: Start fetching events..." />
-        <Log type="INFO" message="[dynamics365crm]: Username: ${/username}. Start time: ${/bookmark}." />
+        <Log type="INFO" message="[dynamics365crm]: Username: ${/username}. Start time: ${/start_time}." />
 
         <!-- Initial fetch -->
         <Set path="/next_link" value="https://${/base_url}/api/data/v9.1/audits" />
@@ -38,7 +39,7 @@
                 <SSLConfiguration allowUntrustedServerCertificate="true" />
                 <DigestAuthentication username="${/username}" password="${/password}" />
                 <QueryParameter name="$orderby" value="createdon asc" />
-                <QueryParameter name="$filter" value="createdon gt ${/bookmark}" />
+                <QueryParameter name="$filter" value="createdon gt ${/start_time}" />
                 <RequestHeader name="Prefer" value="odata.include-annotations=“*”" />
                 <RequestHeader name="Prefer" value="odata.maxpagesize=${/events_per_fetch}}" />
                 <RequestHeader name="OData-Version" value="4.0" />
@@ -61,8 +62,8 @@
                     <!-- <PostEvents path="/events" source="${/identifier}" /> -->
 
                     <!-- Update bookmark for the next run. -->
-                    <Set path="/bookmark" value="${/events[${/last_index}]/createdon}" />
-                    <Log type="INFO" message="[dynamics365crm]: Max events date ${/bookmark}." />
+                    <Set path="/start_time" value="${/events[${/last_index}]/createdon}" />
+                    <Log type="INFO" message="[dynamics365crm]: Max events date ${/start_time}." />
 
                 </If>
             </If>

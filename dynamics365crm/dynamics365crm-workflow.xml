@@ -14,7 +14,7 @@
         <ClearStatus />
         <Set path="/fetch_counter" value="1" />
         <Set path="/events_count" value="0" />
-        <Set path="/sleep_time" value="${/sleep_time_in_seconds * 1000}"/>
+        <Set path="/sleep_time" value="${/sleep_time_in_seconds} * 1000"/>
         <Initialize path="/time_format" value="yyyy-MM-ddTHH:mm:ssZ" />
 
         <!-- Initialize the last updated time filter for the first run. -->
@@ -34,6 +34,7 @@
 
             <!-- Get the audits. -->
             <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
+                <SSLConfiguration allowUntrustedServerCertificate="true" />
                 <BasicAuthentication username="${/username}" password="${/password}" />
                 <QueryParameter name="$orderby" value="createdon asc" />
                 <QueryParameter name="$filter" value="createdon gt ${/bookmark}" />

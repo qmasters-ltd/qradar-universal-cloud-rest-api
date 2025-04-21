@@ -1,6 +1,6 @@
 <Workflow name="Qmasters Dynamics 365 CRM to QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
     <Parameters>
-        <Parameter name="identifier" label="Identifier" description="Log source identifier for posting events to QRadar." required="true" default="dynamic_365" />
+        <Parameter name="identifier" label="Identifier" description="Log source identifier for posting events to QRadar." required="true" default="dynamics_365" />
         <Parameter name="base_url" label="Base URL" description="Base URL of the Dynamics 365 API endpoint. Example: https://your-instance.crm.dynamics.com" required="true" />
         <Parameter name="client_id" label="Client ID" description="OAuth2 client ID for the Azure AD application registered to access Dynamics 365." required="true" />
         <Parameter name="client_secret" label="Client Secret" description="OAuth2 client secret for the Azure AD application. Keep this value secure." required="true" secret="true" />

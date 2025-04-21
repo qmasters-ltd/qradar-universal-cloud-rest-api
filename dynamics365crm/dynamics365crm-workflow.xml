@@ -16,19 +16,18 @@
 
         <Set path="/fetch_counter" value="1" />
         <Set path="/events_count" value="0" />
-        <Set path="/total_count" value="0" />
+        <Set path="/total_events_count" value="0" />
         <Set path="/is_first_fetch" value="true" />
-        <Set path="/sleep_time" value="${/sleep_time_in_seconds} * 1000" />
 
         <Initialize path="/time_format" value="yyyy-MM-dd'T'HH:mm:ss'Z'" />
 
         <!-- Initialize the last updated time filter for the first run. -->
         <Initialize path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />
+
         <Set path="/start_time" value="${/bookmark}" />
         <FormatDate pattern="${/time_format}" timeZone="UTC" time="${/bookmark}" savePath="/start_time" />
 
-        <Log type="INFO" message="[dynamics365crm]: Start fetching events..." />
-        <Log type="INFO" message="[dynamics365crm]: Initial start time: ${/start_time}." />
+        <Log type="INFO" message="[dynamics365crm]: Start fetching events, Start time: ${/start_time}" />
 
         <!-- Get the token -->
         <CallEndpoint url="https://login.microsoftonline.com/${/tenant_id}/oauth2/v2.0/token" method="POST" savePath="/get_access_token">
@@ -45,7 +44,7 @@
         <!-- Handle errors. -->
         <If condition="/get_access_token/status_code != 200">
             <Log type="ERROR" message="[dynamics365crm]: Failed to authenticate. Status: ${/get_access_token/status_code}. Response: ${/get_access_token}" />
-            <Abort reason="Failed to authenticate with Dynamics 365." />
+            <Abort reason="[dynamics365crm]: Failed to authenticate with Dynamics 365." />
         </If>
         <Else>
             <Log type="INFO" message="[dynamics365crm]: Successfully authenticated." />
@@ -56,7 +55,7 @@
 
         <!-- Loop to handle pagination -->
         <While condition="not empty(/next_link)">
-            <Log type="INFO" message="[dynamics365crm]: Running fetch number #${/fetch_counter} for AuditLogs..." />
+            <Log type="INFO" message="[dynamics365crm]: Running fetch number #${/fetch_counter} for Audit Logs..." />
 
             <If condition="/is_first_fetch = 'true'">
                 <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
@@ -73,7 +72,6 @@
 
             <Else>
                 <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
-                    <SSLConfiguration allowUntrustedServerCertificate="true" />
                     <BearerAuthentication token="${/get_access_token/body/access_token}" />
                     <RequestHeader name="Prefer" value="odata.include-annotations=*" />
                     <RequestHeader name="Prefer" value="odata.maxpagesize=${/events_per_fetch}" />
@@ -87,29 +85,40 @@
                 
                 <!-- Handle a successful response. -->
                 <Set path="/events_count" value="${count(/audits_response/body/value)}" />
-                <Set path="/total_count" value="${/total_count + /events_count}" />
+                <Set path="/total_events_count" value="${/total_events_count + /events_count}" />
                 <Log type="INFO" message="[dynamics365crm]: Retrieved ${/events_count} audits." />
 
                 <Set path="/next_link" value="${/audits_response/body/'@odata.nextLink'}" />
 
                 <If condition="${/events_count} > 0">
                     <Set path="/fetch_counter" value="${/fetch_counter + 1}" />
+
                     <Log type="INFO" message="[dynamics365crm]: Posting ${/events_count} events..." />
-                    <!-- <PostEvents path="/audits_response/body/value" source="${/identifier}" /> -->
+                    <PostEvents path="/audits_response/body/value" source="${/identifier}" />
 
-                    <!-- Update bookmark for the next run. -->
-                    <Set path="/start_time" value="${max(/audits_response/body/value/createdon)}" />
-                    <Log type="INFO" message="[dynamics365crm]: Updated bookmark to ${/start_time}." />
+                    <If condition="empty(/next_link)">          
+
+                        <!-- Update bookmark for the next run. -->
+                        <Set path="/bookmark" value="${max(/audits_response/body/value/createdon)}" />
+                        <ParseDate pattern="${/time_format}" timeZone="UTC" date="${/bookmark}" savePath="/bookmark" />
+                        <Set path="/bookmark" value="${/bookmark + 1000}" />
+                        <Log type="INFO" message="[dynamics365crm]: Bookmark updated to ${/bookmark}." />
+                    </If>
                 </If>
+                <Else>
+                    <Log type="INFO" message="[dynamics365crm]: No new audits found." />
+                    <Set path="/next_link" value="" />
+                </Else>
             </If>
-
+            
             <Else>
                 <Log type="ERROR" message="[dynamics365crm]: Failed to fetch audits. Status: ${/audits_response/status_code}, Reason: ${/audits_response/body}" />
-                <Abort reason="Audit fetch failed with status ${/audits_response/status_code}" />
+                <Abort reason="[dynamics365crm]: Audit fetch failed with status ${/audits_response/status_code}" />
             </Else>
         </While>
+        
 
-        <Log type="INFO" message="[dynamics365crm]: Audit collection completed. Total fetched: ${/total_count}." />
+        <Log type="INFO" message="[dynamics365crm]: Audit Logs collection completed. Total fetched audits: ${/total_events_count}." />
     </Actions>
 
     <Tests>

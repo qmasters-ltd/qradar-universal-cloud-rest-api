@@ -1,0 +1,84 @@
+<Workflow name="Reco.AI Alerts Inbox Fetch Workflow" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="identifier" label="Log Source Identifier" description="The log source identifier to post the events to." required="true" />
+        <Parameter name="api_key" label="API Key" description="API key for authentication." required="true" secret="true" />
+        <Parameter name="base_url" label="API Base URL" description="Base URL for the alerts API." default="https://example.com" required="true" />
+        <!-- <Parameter name="risk_levels" label="Risk Levels" description="List of risk levels to filter." required="false" /> -->
+        <Parameter name="time_zone" label="Time Zone" description="The timezone to be used." default="UTC" />
+        <Parameter name="initial_fetch_period" label="Initial Event Fetch Period in Days" description="Number of days in the past from which events will be initially retrieved." default="7" />
+    </Parameters>
+    <Actions>
+
+        <!-- Clear the log source status before a new workflow run starts. -->
+        <ClearStatus />
+        <Set path="/alerts_count" value="0" />
+        <Initialize path="/bookmark" value="" />
+        <Initialize path="/time_format" value="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" />
+        <!-- <Initialize path="/limit" value="1" /> -->
+
+        <If condition="empty(/bookmark)" >
+            <!-- Initialize the last updated time filter for the first run. -->
+            <Set path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />
+            <FormatDate pattern="${/time_format}" timeZone="${/time_zone}" time="${/bookmark}" savePath="/bookmark" />
+        </If>
+
+        <!-- Preperer the end time filter. -->
+        <Set path="/end_time" value="${time()}"/>
+        <Set path="/start_run" value="${time()}" />
+        <FormatDate pattern="${/time_format}" timeZone="${/time_zone}" time="${/end_time}" savePath="/end_time" />
+
+        <Log type="INFO" message="[reco.ai]: Authenticating and fetching alerts..." />
+        <!-- Fetching alerts -->
+        <Log type="INFO" message="[reco.ai]: Fetching events from https://${/base_url}/api/v1/policy-subsystem/alert-inbox?createdTimeframe.after=${/bookmark}" />
+        <CallEndpoint url="https://${/base_url}/api/v1/policy-subsystem/alert-inbox?createdTimeframe.after=${/bookmark}" method="GET" savePath="/alerts_response">
+            <RequestHeader name="authorization" value="Bearer ${/api_key}" />
+            <RequestHeader name="content-type" value="application/json" />
+        </CallEndpoint>
+        <!-- Handling the response -->
+        <If condition="/alerts_response/status_code = 200">
+            <Set path="/alerts" value="${/alerts_response/body/alerts}" />
+            <Set path="/alerts_count" value="${count(/alerts)}" />
+            <Log type="INFO" message="[reco.ai]: Alerts fetched successfully. Total alerts: ${count(/alerts)}" />
+
+            <!-- Processing the alerts, removing the JsonData unnecessary field -->
+            <If condition="/alerts_count > 0">
+                <Set path="/alerts_now_counter" value="0" />
+                <Log type="INFO" message="[reco.ai]: Processing fetched alerts..." />
+                <ForEach item="/alert" items="/alerts">
+                    <Set path="/alert/policyViolations" value="https://${/base_url}/inbox/alerts?filters=selectedAlert%${/alert/id}&amp;selectedAlert=${/alert/id}&amp;singleAlertTab=raw-data"/>
+                    <Set path="/alerts[${/alerts_now_counter}]" value="${/alert}"/>
+                    <Set path="/alerts_now_counter" value="${/alerts_now_counter + 1}"/>
+                    <Log type="INFO" message="[reco.ai]: Single alert: Single alert after modification: ${/alert}" />
+                    <!-- <Log type="INFO" message="[reco.ai]: Single alert: https://${/base_url}/inbox/alerts?filters=selectedAlert%${/alert/id}&amp;selectedAlert=${/alert/id}&amp;singleAlertTab=raw-data" /> -->
+                </ForEach>
+            <!-- If there were any events, post them and update the last updated time to the latest one. -->
+                <Log type="INFO" message="[reco.ai]: Posting fetched events..." />
+                <PostEvents path="/alerts" source="${/identifier}" />
+
+                <!-- Update the last updated time for next run. -->
+                <FormatDate pattern="${/time_format}" time="${max(/alerts/time)}" savePath="/bookmark" />
+                <ParseDate pattern="yyyy-MM-dd'T'HH:mm:ss.SSSXXX" date="${/bookmark}" savePath="/bookmark" />
+                <Set path="/bookmark" value="${/bookmark + 1}"/>
+                <Log type="INFO" message="[reco.ai]: Bookmark updated to: ${/bookmark}" />
+                <FormatDate pattern="${/time_format}" time="${/bookmark}" savePath="/bookmark" />
+                <Log type="INFO" message="[reco.ai]: Done fetch period; total fetched events: ${/alerts_count}; total time in milliseconds is: ${time() - /start_run}" />
+
+            </If>
+            <Else>
+                <Log type="INFO" message="[reco.ai]: No new events were found." />
+            </Else>
+
+
+        </If>
+        <Else>
+            <Log type="ERROR" message="[reco.ai]: Failed to fetch alerts. Status code: ${/alerts_response/status_code}, Error: ${/alerts_response/body}" />
+            <Abort reason="${/alerts_response/body}" />
+        </Else>
+    </Actions>
+    <Tests>
+        <DNSResolutionTest host="${/base_url}" />
+        <TCPConnectionTest host="${/base_url}" />
+        <SSLHandshakeTest host="https://${/base_url}" />
+        <HTTPConnectionThroughProxyTest url="https://${/base_url}/api/v1/policy-subsystem/alert-inbox" expectedResponseStatus="404" />
+    </Tests>
+</Workflow>

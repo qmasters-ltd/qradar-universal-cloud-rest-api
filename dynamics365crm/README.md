@@ -1,70 +1,59 @@
-# Boomi Parameters Configuration
-| Parameter                        | Name                                    | Required (True/False) | Type            | Description                                                                                           | Default Value |
-|----------------------------------|-----------------------------------------|-----------------------|-----------------|-------------------------------------------------------------------------------------------------------|---------------|
-| `identifier`                     | Log Source Identifier                   | True                  | String          | The log source identifier to post the events to.                                                     |               |
-| `base_url`                       | Base URL                               | True                  | String          | Dynamic 365 CRM base URL.                                                                                  |  |
-| `username`                      | Username                        | True                  | Authentication  | user name. |               |
-| `token`                  | Token                              | True                  | Authentication  | token. |               |
-| `start_fetch_time`                | Initial Event Start Time Date                         | False                 | String          | The date time from which events will be initially retrieved, For example: "2020-10-16T15:21:57Z".               |    1 Hour ago    |
-| `sleep_time_in_seconds`                | Sleep Time in Seconds | False                 | Number          | The downtime for the connector after it is in sync with the server (Min: 0).                          | `20` |
+# Dynamics 365 CRM Qradar Connector
 
-##
+## Dynamics 365 CRM Parameters Configuration
 
-# How to Generate Token
-1. Log on to your Boomi instance.
+| Parameter              | Name                         | Required (True/False) | Type            | Description                                                                                          | Default Value     |
+|------------------------|------------------------------|------------------------|------------------|------------------------------------------------------------------------------------------------------|-------------------|
+| `identifier`           | Log Source Identifier        | True                   | String           | The log source identifier to post the events to in QRadar.                                           | `dynamics_365`    |
+| `base_url`             | Base URL                     | True                   | String           | Base URL of the Dynamics 365 CRM instance. Example: `your-instance.crm.dynamics.com`                |                   |
+| `client_id`            | Client ID                    | True                   | Authentication   | OAuth2 Client ID registered in Azure AD.                                                             |                   |
+| `client_secret`        | Client Secret                | True                   | Authentication   | OAuth2 Client Secret associated with the above client ID.                                            |                   |
+| `tenant_id`            | Tenant ID                    | True                   | Authentication   | Azure Active Directory (AD) Tenant ID under which the Dynamics 365 application is registered.       |                   |
+| `crm_version`          | CRM Version                  | True                   | String           | Dynamics 365 CRM version (e.g., `9.1`, `9.2`). Used to determine feature and endpoint compatibility. |                   |
+| `events_per_fetch`     | Events Per Fetch             | False                  | Number           | Maximum number of records to fetch in each API call. Large values may cause timeout errors.         | `1000`            |
+| `initial_fetch_period` | Initial Fetch Period (Days)  | False                  | Number           | Number of days to look back when retrieving events initially.                                        | `7`               |
 
-2. Navigate to repositories page.
+---
 
-3. In the Repositories page, click the repository name.
+## QRadar Log Source Configuration for Dynamics 365 CRM
 
-4. Select the Configure tab, and click Generate New.
+To ingest data using the Universal REST API Protocol, configure a log source on the QRadar Console with the appropriate workflow and parameter values.
 
-5. Click OK in the confirmation dialog to confirm the request.
-
-6. You return to the Configure tab. The 'My Authentication Token' field updates to show the new authentication token for your account.
-
-
-# QRadar Log Source Configuration
-If you want to ingest data from an endpoint using Universal Rest API Protocol, configure a log source on the QRadar® Console using the Workflow field so that the defined endpoint can communicate with QRadar by using the Universal Rest API protocol.
+### Steps:
 
 1. Log in to QRadar.
+2. Click the **Admin** tab.
+3. Click the **DSM Editor** app icon to create a new DSM.
+   - Click **Create New**, name it `Dynamics365CRM`.
+4. Click the **Log Source Management** app icon.
+5. Click **New Log Source > Single Log Source**.
+6. On the **Select a Log Source Type** page:
+   - Choose `Dynamics365CRM` as the Log Source Type.
+   - Choose `Universal REST API` as the Protocol Type.
+7. On the **Protocol Configuration** page:
+   - Paste your Workflow XML into the **Workflow** field.
+   - Paste the parameter configuration (see above) into the **Workflow Parameter Values** field.
+   - Ensure **Coalescing Events** is turned **off**.
+8. Click **Start Test** to verify.
+9. If issues occur, click **Configure Protocol Parameters**, adjust, and **retest**.
+10. Click **Finish** to save the log source.
 
-2. Click the Admin tab.
+---
 
-3. To create DSM, click the DSM editor app icon.
+## Notes
 
-4. Then click Create New and name it "Boomi".
+- The `identifier` in your Workflow Parameters must match the QRadar log source identifier.
+- Ensure the Azure AD app has API permissions to access Dynamics 365 audit data.
+- Open separate log sources for high-volume data types to improve performance.
 
-4. To create the log source, click the QRadar Log Source Management app icon.
-![Sample Image](q1.png)
+---
 
-5. Click New Log Source > Single Log Source.
-![Sample Image](q4.png)
-![Sample Image](q3.png)
+## How to Register and Retrieve OAuth Token (Azure App)
 
-6. On the Select a Log Source Type page, Select a Log Source Type (Boomi) and click Select Protocol Type (Universal Rest API).
-![Sample Image](q5.png)
-![Sample Image](q6.png)
-
-7. On the Select a Protocol Type page, select a protocol and click Configure Log Source Parameters.
-
-8. On the Configure the Log Source parameters page, configure the log source parameters and click Configure Protocol Parameters.
-![Sample Image](q7.png)
-
-9. On the Configure the Protocol Parameters page, configure the protocol-specific parameters (Workflow and Workflow Parameter Values).
-![Sample Image](q8.png)
-
-10. In the Test protocol parameters window, click Start Test.
-![Sample Image](q9.png)
-
-10. To fix any errors, click Configure Protocol Parameters. Configure the parameters and click Test Protocol Parameters.
-
-11. Click Finish
-
-##
-
-- The log source identifier must be identical to the inserted `identifier`.
-- Copy the Workflow XML into the Workflow field.
-- Populate the Workflow Parameters according to the table above and copy it into the Workflow Parameters Values field.
-- Make sure to turn off the Coalescing Events to avoid grouping of the events on the basis of Source and Destination IP.
-- It is advised to open an individual log source for report types that fetch large amount of data.
+1. Log into [Azure Portal](https://portal.azure.com).
+2. Navigate to **Azure Active Directory** > **App Registrations**.
+3. Click **New registration**, and complete app setup.
+4. After creation, copy the **Client ID** and **Directory (Tenant) ID**.
+5. Go to **Certificates & secrets** > click **New client secret**. Copy the secret value (it won't be shown again).
+6. Assign the app appropriate API permissions to Dynamics 365.
+7. Use these credentials in the `client_id`, `client_secret`, and `tenant_id` parameters.

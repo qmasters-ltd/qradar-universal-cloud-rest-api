@@ -10,16 +10,18 @@
 	<!-- "api_key" - Fortress API key for QRadar (required) -->
 	<Value name="api_key" value=""/>
 
-	<!-- "severity" - Fortress alert severity, can be multiple separated by commas, allowed values: CRITICAL,HIGH,MEDIUM,LOW,NONE. (Default=All). (optional) -->
-	<Value name="severity" value='"CRITICAL","HIGH","MEDIUM","LOW","NONE"'/>
-	<!-- "status" - Show closed/open alerts, allows values: OPEN,CLOSED,DISMISSED,QUARANTINED,NO_CAPACITY,DETECTED,MITIGATED. (Default=all). (optional) -->
-	<Value name="status" value='"OPEN","CLOSED","DISMISSED","QUARANTINED","NO_CAPACITY","DETECTED","MITIGATED"'/>
+	<!-- "severity" - Fortress alert severity, can be multiple separated by commas, allowed values: "CRITICAL" "HIGH" "MEDIUM" "LOW" "NONE". (Default=All). (optional) -->
+	<Value name="severity" value='"CRITICAL","HIGH","MEDIUM"'/>
+	<!-- "status" - Show closed/open alerts, allows values: "DISMISSED" "OPEN". (Default=all). (optional) -->
+	<Value name="status" value='"OPEN"'/>
 
-	<!-- "service_type" - This parameter is an array of strings used to filter alerts by service type, allows values: EDP,MAIL,CLOUD_STORAGE,VMDR. (Default=all). (optional) -->
-	<Value name="service_type" value='"EDP","MAIL","CLOUD_STORAGE","VMDR"'/>
+	<!-- "service_type" - This parameter is an array of strings used to filter alerts by service type, allows values: "EDP" "WEB" "MAIL" "CLOUD_STORAGE" "BACKUP" "VMDR" "MOBILE" "AWARANESS" "ATTACK_SIMULATOR" "MERLIN_AI" "SANDBOX" "RMM" "DNS" "MONITOR" "NETWORK" "CLOUD_POSTURE" "IDENTITY_ACCESS" "IDP" "THREAT_INTELLIGENCE" "ASM" (Default=all). (optional) -->
+	<Value name="service_type" value=""/>
 
 	<!-- "page_size" - Max number of alerts to return per poll (Default=100). (optional) -->
-	<Value name="page_size" value="100"/>
+	<Value name="page_size" value="10"/>
 	<!-- "time_zone" - select your time zone (Default=UTC). (optional) -->
 	<Value name="time_zone" value="UTC"/>
+	<!-- "initial_fetch_period" - Number of days to look back for initial event ingestion. Useful for historical data collection on first run. Default: 7 days -->
+	<Value name="initial_fetch_period" value="2"/>
 </WorkflowParameterValues>

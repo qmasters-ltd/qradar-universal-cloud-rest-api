@@ -12,7 +12,7 @@
     <Value name="client_secret" value=""/>
     <!-- Azure AD Tenant ID under which the Dynamics 365 app is registered. -->
     <Value name="tenant_id" value=""/>
-	<!-- Microsoft Dynamics 365 CRM version (e.g., 9.1 / 9.2). Used to determine feature support or endpoint compatibility -->
+	<!-- Microsoft Dynamics 365 CRM version (e.g., v9.1 / v9.2). Used to determine feature support or endpoint compatibility -->
 	<Value name="crm_version" value=""/>
 
     <!-- Maximum number of event records to fetch in each API call. Large values may increase performance but can cause timeout errors. Default: 1000 -->

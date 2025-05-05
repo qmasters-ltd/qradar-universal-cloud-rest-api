@@ -9,7 +9,7 @@
 | `client_id`            | Client ID                    | True                   | Authentication   | OAuth2 Client ID registered in Azure AD.                                                             |                   |
 | `client_secret`        | Client Secret                | True                   | Authentication   | OAuth2 Client Secret associated with the above client ID.                                            |                   |
 | `tenant_id`            | Tenant ID                    | True                   | Authentication   | Azure Active Directory (AD) Tenant ID under which the Dynamics 365 application is registered.       |                   |
-| `crm_version`          | CRM Version                  | True                   | String           | Dynamics 365 CRM version (e.g., `9.1`, `9.2`). Used to determine feature and endpoint compatibility. |                   |
+| `crm_version`          | CRM Version                  | True                   | String           | Dynamics 365 CRM version (e.g., `v9.1`, `v9.2`). Used to determine feature and endpoint compatibility. |                   |
 | `events_per_fetch`     | Events Per Fetch             | False                  | Number           | Maximum number of records to fetch in each API call. Large values may cause timeout errors.         | `1000`            |
 | `initial_fetch_period` | Initial Fetch Period (Days)  | False                  | Number           | Number of days to look back when retrieving events initially.                                        | `7`               |
 

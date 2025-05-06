@@ -1,37 +1,48 @@
-<Workflow name="Qmasters Reflectiz Platform workflow for QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2" >
-    <Parameters>
-        <Parameter name="hostname" label="API Host" required="true" default="https://dashboard.reflectiz.com"/>
-        <Parameter name="api_token" label="API Token" required="true" secret="true" default=""/>
+<Workflow name="Qmasters Reflectiz Platform workflow for QRadar" version="1.1" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2" >
+	<Parameters>
+        <Parameter name="identifier" label="Log Source Identifier" description="The log source identifier to post the events to." required="true" />
+        <Parameter name="host_name" label="API Host" description="Reflectiz API Host." required="true" default="https://api.reflectiz.com"/>
+        <Parameter name="api_token" label="API Token" description="Reflectiz API Token." required="true" secret="true" />
     </Parameters>
-    <Actions>
 
+    <Actions>
     <!--  Clear the log source status before a new workflow run starts  -->
     <ClearStatus/>
+    
+    <Log type="INFO" message="[Reflectiz]: Running fetch for Alerts."/>
 
-    <CallEndpoint url="${/hostname}/api/pull" method="GET" savePath="/get_alerts">
-        <QueryParameter name="token" value="${/api_token}" omitIfEmpty="true"/>
-        <QueryParameter name="version" value="1"/>
+    <!-- Get the Alerts. -->
+    <CallEndpoint url="${/host_name}/v1/alerts/pull" method="GET" savePath="/get_alerts">
+        <RequestHeader name="X-TOKEN" value="${/api_token}" />
     </CallEndpoint>
 
     <!-- Handle Errors -->
     <If condition="/get_alerts/status_code != 200">
         <If condition="/get_alerts/status_code = 400" >
+            <Log type="ERROR" message="[Reflectiz] - status code ${/get_alerts/status_code}, abort at get alerts. Reason: The token is not exist" />
             <Abort reason="The token is not exist" />
         </If>
-
+        <Log type="ERROR" message="[Reflectiz] - status code ${/get_alerts/status_code}, abort at get alerts. Reason: ${/get_alerts/body}" />
         <Abort reason="Reflectiz abort reason:  ${/get_alerts}" />
     </If>
 
     <!-- Post Events if any-->
     <If condition="count(/get_alerts/body/messages) > 0">
-        <PostEvents path="/get_alerts/body/messages" source="${/hostname}"/>
+        <Log type="INFO" message="[Reflectiz]: Posting fetched events..." />
+        <PostEvents path="/get_alerts/body/messages" source="${/identifier}"/>
+        <Log type="INFO" message="[Reflectiz]: Done fetch period; total fetched events:" />
+    <!-- ${/events_count}; total time in milliseconds is: ${time() - /start_run}" -->
     </If>
 
+    <Else>
+        <Log type="INFO" message="[Reflectiz]: No new events were found." />
+    </Else>
     </Actions>
+
     <Tests>
-        <DNSResolutionTest host="${/hostname}" />
-        <TCPConnectionTest host="${/hostname}" />
-        <SSLHandshakeTest host="${/hostname}" />
-        <HTTPConnectionThroughProxyTest url="${/hostname}" expectedResponseStatus="404" />
+        <DNSResolutionTest host="${/host_name}" />
+        <TCPConnectionTest host="${/host_name}" />
+        <SSLHandshakeTest host="${/host_name}" />
+        <HTTPConnectionThroughProxyTest url="${/host_name}" expectedResponseStatus="404" />
     </Tests>
 </Workflow>

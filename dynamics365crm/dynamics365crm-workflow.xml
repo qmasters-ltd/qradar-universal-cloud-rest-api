@@ -63,8 +63,7 @@
                     <BearerAuthentication token="${/get_access_token/body/access_token}" />
                     <QueryParameter name="$orderby" value="createdon asc" />
                     <QueryParameter name="$filter" value="createdon gt ${/start_time}" />
-                    <RequestHeader name="Prefer" value="odata.include-annotations=*" />
-                    <RequestHeader name="Prefer" value="odata.maxpagesize=${/events_per_fetch}" />
+                    <RequestHeader name="Prefer" value="odata.include-annotations=*,odata.maxpagesize=${/events_per_fetch}" />
                     <RequestHeader name="OData-Version" value="4.0" />
                 </CallEndpoint>
                 <Set path="/is_first_fetch" value="false" />
@@ -73,8 +72,7 @@
             <Else>
                 <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
                     <BearerAuthentication token="${/get_access_token/body/access_token}" />
-                    <RequestHeader name="Prefer" value="odata.include-annotations=*" />
-                    <RequestHeader name="Prefer" value="odata.maxpagesize=${/events_per_fetch}" />
+                    <RequestHeader name="Prefer" value="odata.include-annotations=*,odata.maxpagesize=${/events_per_fetch}" />
                     <RequestHeader name="OData-Version" value="4.0" />
                 </CallEndpoint>
             </Else>

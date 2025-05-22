@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+    
+	<!-- Log source identifier for QRadar. Events will be posted under this identifier. Default: dynamics_365 -->
+    <Value name="identifier" value="dynamics_365"/>
+
+    <!-- Base URL of the Microsoft Dynamics 365 API endpoint. Example: your-instance.crm.dynamics.com -->
+    <Value name="base_url" value=""/>
+    <!-- OAuth2 Client ID used for authentication with Azure AD. This is typically associated with a registered Azure App. -->
+    <Value name="client_id" value=""/>
+    <!-- OAuth2 Client Secret used in conjunction with the client ID to authenticate. Keep this value secure. -->
+    <Value name="client_secret" value=""/>
+    <!-- Azure AD Tenant ID under which the Dynamics 365 app is registered. -->
+    <Value name="tenant_id" value=""/>
+	<!-- Microsoft Dynamics 365 CRM version (e.g., v9.1 / v9.2). Used to determine feature support or endpoint compatibility -->
+	<Value name="crm_version" value=""/>
+
+    <!-- Maximum number of event records to fetch in each API call. Large values may increase performance but can cause timeout errors. Default: 1000 -->
+    <Value name="events_per_fetch" value="1000"/>
+    <!-- Number of days to look back for initial event ingestion. Useful for historical data collection on first run. Default: 7 days -->
+    <Value name="initial_fetch_period" value="7"/>
+
+</WorkflowParameterValues>

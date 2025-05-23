@@ -1,0 +1,141 @@
+<Workflow name="Qmasters Gravitee workflow for QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="api_host" label="Host Name" required="true" />
+        <Parameter name="api_token" label="API Token" required="true" secret="true" />
+        <Parameter name="org_id" label="Organization ID" required="false" default="DEFAULT" />
+        <Parameter name="env_id" label="Environment ID" required="false" default="DEFAULT"/>
+        <Parameter name="identifier" label="Identifier" required="false" default="Gravitee API"/>
+        <Parameter name="filter_environment" label="Environment Filter" required="false" />
+        <Parameter name="filter_type" label="Type Filter" required="false" />
+        <Parameter name="filter_event" label="Event Filter" required="false" />
+        <Parameter name="filter_application" label="Application Filter" required="false" />
+        <Parameter name="filter_api" label="API Filter" required="false" />
+        <Parameter name="max_results" label="Page Size" required="false" default="100" />
+        <Parameter name="initial_event_fetch_period" label="Initial Event Fetch Period in Days" required="false" />
+    </Parameters>
+
+    <Actions>
+        <!-- Clear the log source status before a new workflow run starts -->
+        <Log type="INFO" message="Gravitee API: Starting workflow execution." />
+        <ClearStatus />
+
+        <!-- Initialize the risingValue filter for the first run. -->
+        <If condition="/initial_event_fetch_period > 0" >
+            <Initialize path="/bookmark" value="${time() - /initial_event_fetch_period * 86400 * 1000}"/>
+        </If>
+        <Else>
+            <Initialize path="/bookmark" value="${time() - 604800000}" />
+        </Else>
+
+        <!-- Set the first page number -->
+        <Set path="/from" value="${/bookmark}"/>
+
+        <!-- Set the first page number -->
+        <Set path="/page" value="1"/>
+
+        <Log type="INFO" message="Gravitee API: Bookmark: ${/bookmark}." />
+
+        <!-- Get Audit Logs -->
+        <Log type="INFO" message="Gravitee API: Fetching audit logs from API." />
+        <CallEndpoint url="${/api_host}/organizations/${/org_id}/environments/${/env_id}/audit" method="GET" savePath="/get_audit_logs" >
+            <QueryParameter name="from" value="${/from}" />
+            <QueryParameter name="size" value="1" />
+            <QueryParameter name="type" value="${/filter_type}" omitIfEmpty="true" />
+            <QueryParameter name="environment" value="${/filter_environment}" omitIfEmpty="true" />
+            <QueryParameter name="api" value="${/filter_api}" omitIfEmpty="true" />
+            <QueryParameter name="application" value="${/filter_application}" omitIfEmpty="true" />
+            <QueryParameter name="event" value="${/filter_event}" omitIfEmpty="true" />
+            <RequestHeader name="Authorization" value="Bearer ${/api_token}" />
+            <RequestHeader name="Accept" value="application/json" />
+            <RequestHeader name="Content-Type" value="application/json" />
+        </CallEndpoint>
+
+        <!-- Handle Errors -->
+        <Log type="INFO" message="Gravitee API: Checking API response status." />
+        <If condition="/get_audit_logs/status_code != 200">
+            <If condition="/get_audit_logs/status_code = 400" >
+                <Log type="ERROR" message="Bad input parameter. ${/get_audit_logs/body/message}" />
+                <Abort reason="Bad input parameter. ${/get_audit_logs/body/message}" />
+            </If>
+            <If condition="/get_audit_logs/status_code = 401" >
+                <Log type="ERROR" message="Invalid token or token expired." />
+                <Abort reason="Invalid token or token expired" />
+            </If>
+            <If condition="/get_audit_logs/status_code >= 500" >
+                <Log type="ERROR" message="Internal server error." />
+                <Abort reason="Internal server error." />
+            </If>
+
+            <Log type="ERROR" message="Unexpected error: ${/get_audit_logs}" />
+            <Abort reason="Gravitee Audit API abort reason:  ${/get_audit_logs}" />
+        </If>
+
+        <!-- Set the total pages -->
+        <Set path="/page" value="${ceil(/get_audit_logs/body/totalElements / /max_results)}" />
+
+        <If condition="/page = 0" >
+            <Log type="INFO" message="Gravitee API: The connection to the Gravitee API was successfully established; however, there are no new events available for retrieval at this moment. The last event received was at: ${/bookmark} (UTC)." />
+        </If>
+        
+        <!-- Post Events, if any -->
+        <While condition="/page > 0">
+            <!-- Get Audit Logs -->
+            <Log type="INFO" message="Gravitee API: Fetching audit logs from API in page #${/page}..." />
+            <CallEndpoint url="${/api_host}/organizations/${/org_id}/environments/${/env_id}/audit" method="GET" savePath="/get_audit_logs" >
+                <QueryParameter name="from" value="${/from}" />
+                <QueryParameter name="page" value="${/page}" />
+                <QueryParameter name="size" value="${/max_results}" />
+                <QueryParameter name="type" value="${/filter_type}" omitIfEmpty="true" />
+                <QueryParameter name="environment" value="${/filter_environment}" omitIfEmpty="true" />
+                <QueryParameter name="api" value="${/filter_api}" omitIfEmpty="true" />
+                <QueryParameter name="application" value="${/filter_application}" omitIfEmpty="true" />
+                <QueryParameter name="event" value="${/filter_event}" omitIfEmpty="true" />
+                <RequestHeader name="Authorization" value="Bearer ${/api_token}" />
+                <RequestHeader name="Accept" value="application/json" />
+                <RequestHeader name="Content-Type" value="application/json" />
+            </CallEndpoint>
+
+            <!-- Handle Errors -->
+            <Log type="INFO" message="Gravitee API: Checking API response status." />
+            <If condition="/get_audit_logs/status_code != 200">
+                <If condition="/get_audit_logs/status_code = 400" >
+                    <Log type="ERROR" message="Bad input parameter. ${/get_audit_logs/body/message}" />
+                    <Abort reason="Bad input parameter. ${/get_audit_logs/body/message}" />
+                </If>
+                <If condition="/get_audit_logs/status_code = 401" >
+                    <Log type="ERROR" message="Invalid token or token expired." />
+                    <Abort reason="Invalid token or token expired" />
+                </If>
+                <!-- <If condition="/get_audit_logs/status_code >= 500" >
+                    <Log type="ERROR" message="Internal server error." />
+                    <Abort reason="Internal server error." />
+                </If>
+
+                <Log type="ERROR" message="Unexpected error: ${/get_audit_logs}" />
+                <Abort reason="Gravitee Audit API abort reason:  ${/get_audit_logs}" /> -->
+            </If>
+
+            <If condition="/get_audit_logs/status_code = 500" >
+                <Log type="WARN" message="Couldn't fetch events for page #${/page}, continuing to next page." />
+            </If>
+            <Else>
+                <Log type="INFO" message="Gravitee API: Audit logs fetched successfully. Posting events..." />
+                <PostEvents path="/get_audit_logs/body/content" source="${/identifier}" />
+
+                <Set path="/bookmark" value="${/get_audit_logs/body/content[0]/createdAt + 1 }" />
+                <Log type="INFO" message="Gravitee API: Done posting events from page #${/page}, bookmark updated to ${/bookmark}." />
+            </Else>
+            <Set path="/page" value="${/page - 1}" />
+        </While>
+
+        <Log type="INFO" message="Gravitee API: Done workflow operation, exiting..." />
+
+    </Actions>
+
+    <Tests>
+        <DNSResolutionTest host="${/api_host}" />
+        <TCPConnectionTest host="${/api_host}" />
+        <SSLHandshakeTest host="${/api_host}" />
+        <HTTPConnectionThroughProxyTest url="${/api_host}" expectedResponseStatus="404" />
+    </Tests>
+</Workflow>

@@ -8,7 +8,7 @@
 | `username`                      | Username                        | True                  | Authentication  | ServiceNow user name. |               |
 | `password`                  | Password                              | True                  | Authentication  | ServiceNow password. |               |
 | `time_zone`                      | Time Zone                               | False                 | String          | The timezone used in ServiceNow.                                                                      | `UTC`         |
-| `events_per_fetch`                | Events Per Fetch                         | False                 | Number          | Max number of records to return per fetch. Note: a large fetch may cause timeout errors.               | `100`         |
+| `events_per_fetch`                | Events Per Fetch                         | False                 | Number          | Max number of records to return per fetch. Note: a large fetch may cause timeout errors.               | `10000`         |
 | `initial_fetch_period`     | Initial Event Fetch Period in Days      | False                 | Number          | Number of days in the past from which events will be initially retrieved.                            | `7`           |
 | `table_to_fetch`                   | Table to Fetch                            | False                 | String          | Table name to fetch events from.                                                        |  |
 | `pagination_time_field`                | Pagination Time Field | False                 | String          | The updated time field name (according to the table field name) for pagination.                          | `sys_updated_on` |

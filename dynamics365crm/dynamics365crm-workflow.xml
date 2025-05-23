@@ -1,0 +1,130 @@
+<Workflow name="Qmasters Dynamics 365 CRM to QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="identifier" label="Identifier" description="Log source identifier for posting events to QRadar." required="true" default="dynamics_365" />
+        <Parameter name="base_url" label="Base URL" description="Base URL of the Dynamics 365 API endpoint. Example: https://your-instance.crm.dynamics.com" required="true" />
+        <Parameter name="client_id" label="Client ID" description="OAuth2 client ID for the Azure AD application registered to access Dynamics 365." required="true" />
+        <Parameter name="client_secret" label="Client Secret" description="OAuth2 client secret for the Azure AD application. Keep this value secure." required="true" secret="true" />
+        <Parameter name="tenant_id" label="Tenant ID" description="Azure Active Directory (AD) tenant ID for the registered Dynamics 365 application." required="true" />
+        <Parameter name="crm_version" label="CRM Version" description="Microsoft Dynamics 365 CRM version (e.g., 9.1 / 9.2). Determines endpoint compatibility." required="true" />
+        <Parameter name="events_per_fetch" label="Events Per Fetch" description="Maximum number of records to retrieve per API call. Default is 1000." default="1000" />
+        <Parameter name="initial_fetch_period" label="Initial Fetch Period (Days)" description="Number of days in the past from which to retrieve initial events." default="7" />
+    </Parameters>
+
+    <Actions>
+        <!-- Clear the log source status before a new workflow run starts. -->
+        <ClearStatus />
+
+        <Set path="/fetch_counter" value="1" />
+        <Set path="/events_count" value="0" />
+        <Set path="/total_events_count" value="0" />
+        <Set path="/is_first_fetch" value="true" />
+
+        <Initialize path="/time_format" value="yyyy-MM-dd'T'HH:mm:ss'Z'" />
+
+        <!-- Initialize the last updated time filter for the first run. -->
+        <Initialize path="/bookmark" value="${time() - /initial_fetch_period * 86400 * 1000}" />
+
+        <Set path="/start_time" value="${/bookmark}" />
+        <FormatDate pattern="${/time_format}" timeZone="UTC" time="${/bookmark}" savePath="/start_time" />
+
+        <Log type="INFO" message="[dynamics365crm]: Start fetching events, Start time: ${/start_time}" />
+
+        <!-- Get the token -->
+        <CallEndpoint url="https://login.microsoftonline.com/${/tenant_id}/oauth2/v2.0/token" method="POST" savePath="/get_access_token">
+            <RequestHeader name="Accept" value="application/json" />
+            <RequestHeader name="Content-Type" value="application/x-www-form-urlencoded" />
+            <UrlEncodedFormRequestBody>
+                <Parameter name="grant_type" value="client_credentials" />
+                <Parameter name="client_id" value="${/client_id}" />
+                <Parameter name="client_secret" value="${/client_secret}" />
+                <Parameter name="scope" value="https://${/base_url}/.default" />
+            </UrlEncodedFormRequestBody>
+        </CallEndpoint>
+
+        <!-- Handle errors. -->
+        <If condition="/get_access_token/status_code != 200">
+            <Log type="ERROR" message="[dynamics365crm]: Failed to authenticate. Status: ${/get_access_token/status_code}. Response: ${/get_access_token}" />
+            <Abort reason="[dynamics365crm]: Failed to authenticate with Dynamics 365." />
+        </If>
+        <Else>
+            <Log type="INFO" message="[dynamics365crm]: Successfully authenticated." />
+        </Else>
+
+        <!-- Initial fetch -->
+        <Set path="/next_link" value="https://${/base_url}/api/data/${/crm_version}/audits" />
+
+        <!-- Loop to handle pagination -->
+        <While condition="not empty(/next_link)">
+            <Log type="INFO" message="[dynamics365crm]: Running fetch number #${/fetch_counter} for Audit Logs..." />
+
+            <If condition="/is_first_fetch = 'true'">
+                <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
+                    <SSLConfiguration allowUntrustedServerCertificate="true" />
+                    <BearerAuthentication token="${/get_access_token/body/access_token}" />
+                    <QueryParameter name="$orderby" value="createdon asc" />
+                    <QueryParameter name="$filter" value="createdon gt ${/start_time}" />
+                    <RequestHeader name="Prefer" value="odata.include-annotations=*,odata.maxpagesize=${/events_per_fetch}" />
+                    <RequestHeader name="OData-Version" value="4.0" />
+                </CallEndpoint>
+                <Set path="/is_first_fetch" value="false" />
+            </If>
+
+            <Else>
+                <CallEndpoint url="${/next_link}" method="GET" savePath="/audits_response">
+                    <BearerAuthentication token="${/get_access_token/body/access_token}" />
+                    <RequestHeader name="Prefer" value="odata.include-annotations=*,odata.maxpagesize=${/events_per_fetch}" />
+                    <RequestHeader name="OData-Version" value="4.0" />
+                </CallEndpoint>
+            </Else>
+
+            <Log type="INFO" message="[dynamics365crm]: Response status: ${/audits_response/status_code}" />
+
+            <If condition="/audits_response/status_code = 200">
+                
+                <!-- Handle a successful response. -->
+                <Set path="/events_count" value="${count(/audits_response/body/value)}" />
+                <Set path="/total_events_count" value="${/total_events_count + /events_count}" />
+                <Log type="INFO" message="[dynamics365crm]: Retrieved ${/events_count} audits." />
+
+                <Set path="/next_link" value="${/audits_response/body/'@odata.nextLink'}" />
+
+                <If condition="${/events_count} > 0">
+                    <Set path="/fetch_counter" value="${/fetch_counter + 1}" />
+
+                    <Log type="INFO" message="[dynamics365crm]: Posting ${/events_count} events..." />
+                    <PostEvents path="/audits_response/body/value" source="${/identifier}" />
+
+                    <If condition="empty(/next_link)">          
+
+                        <!-- Update bookmark for the next run. -->
+                        <Set path="/bookmark" value="${max(/audits_response/body/value/createdon)}" />
+                        <ParseDate pattern="${/time_format}" timeZone="UTC" date="${/bookmark}" savePath="/bookmark" />
+                        <Set path="/bookmark" value="${/bookmark + 1000}" />
+                        <Log type="INFO" message="[dynamics365crm]: Bookmark updated to ${/bookmark}." />
+                    </If>
+                </If>
+                <Else>
+                    <Log type="INFO" message="[dynamics365crm]: No new audits found." />
+                    <Set path="/next_link" value="" />
+                </Else>
+            </If>
+            
+            <Else>
+                <Log type="ERROR" message="[dynamics365crm]: Failed to fetch audits. Status: ${/audits_response/status_code}, Reason: ${/audits_response/body}" />
+                <Abort reason="[dynamics365crm]: Audit fetch failed with status ${/audits_response/status_code}" />
+            </Else>
+        </While>
+        
+
+        <Log type="INFO" message="[dynamics365crm]: Audit Logs collection completed. Total fetched audits: ${/total_events_count}." />
+    </Actions>
+
+    <Tests>
+        <DNSResolutionTest host="login.microsoftonline.com" />
+        <TCPConnectionTest host="https://login.microsoftonline.com" />
+        <HTTPConnectionThroughProxyTest url="https://login.microsoftonline.com" expectedResponseStatus="200" />
+        <DNSResolutionTest host="${/base_url}" />
+        <TCPConnectionTest host="https://${/base_url}" />
+        <HTTPConnectionThroughProxyTest url="https://${/base_url}" expectedResponseStatus="200" />
+    </Tests>
+</Workflow>

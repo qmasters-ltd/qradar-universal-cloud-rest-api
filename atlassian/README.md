@@ -74,7 +74,7 @@ The parameters XML document specifies the user settings for this log source, inc
 ## Atlassian Parameters Configuration
 | Parameter      | Name                         | Default Value           | Type           | Required | Description                                                                                                    |
 | -------------- | ---------------------------- | ---------------------- | -------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
-| identifier     | Log Source Identifier        | Atlassian-AuditLogs    | String         | No       | The log source identifier. Default: Atlassian-AuditLogs.                                                       |
+| identifier     | Log Source Identifier        | Atlassian-AuditLogs    | String         | Yes       | The log source identifier. Default: Atlassian-AuditLogs.                                                       |
 | orgID          | Atlassian Organization ID    |                        | String         | Yes      | Atlassian Organization ID.                                                                                     |
 | apiToken       | Atlassian API Token          |                        | Authentication | Yes      | Atlassian API token for QRadar.                                                                                |
 | timeZone       | Time Zone                    | UTC                    | String         | No       | Select your time zone. Default: UTC.                                                                           |

@@ -72,11 +72,11 @@ The parameters XML document specifies the user settings for this log source, inc
 12. Click Finish
 
 ## Atlassian Parameters Configuration
-| Parameter   | Name                  | Default Value          | Type           | Required | Description                                       |
-| ----------- | --------------------- | ---------------------- | -------------- | -------- | ------------------------------------------------- |
-| identifier             | Log Source Identifier         | Atlassian-AuditLogs                      | String       | True                  | The log source identifier for QRadar.
-| orgID       | Atlassian Organization ID  |      | String         | Yes            | Atlassian Organization ID.                        |
-| apiToken    | Atlassian API Token      |          | Authentication | Yes            | Atlassian API token for QRadar.                     |
-| query      | Query         |          | String         | No             | Single query term for searching events.                                 |
-| timeZone    | Time Zone             | UTC      | String         | No             | Time zone selection.                             |
-| startTime   | Start Time            |          | Integer        | No             | Specify the start time to retrieve logs from. Provide the time in epoch time with milliseconds (e.g., 1693309396000). The default is logs from the past 1 hour.                             |
+| Parameter      | Name                         | Default Value           | Type           | Required | Description                                                                                                    |
+| -------------- | ---------------------------- | ---------------------- | -------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| identifier     | Log Source Identifier        | Atlassian-AuditLogs    | String         | No       | The log source identifier. Default: Atlassian-AuditLogs.                                                       |
+| orgID          | Atlassian Organization ID    |                        | String         | Yes      | Atlassian Organization ID.                                                                                     |
+| apiToken       | Atlassian API Token          |                        | Authentication | Yes      | Atlassian API token for QRadar.                                                                                |
+| timeZone       | Time Zone                    | UTC                    | String         | No       | Select your time zone. Default: UTC.                                                                           |
+| startTime      | Start Time                   | 7 days ago             | Integer        | No       | Number of days to look back for initial ingestion (historical collection). Default: 7 days.                    |
+| eventsPerFetch | Events Per Fetch             | 100                    | Integer        | No       | Maximum number of event records to fetch per API call (max 500). Default: 100. Larger values may cause timeouts.|

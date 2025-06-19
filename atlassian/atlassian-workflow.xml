@@ -1,4 +1,4 @@
-<Workflow name="Qmasters Atlassian workflow for QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+<Workflow name="Qmasters Atlassian workflow for QRadar" version="2.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
     <Parameters>
         <Parameter name="identifier" label="Identifier" required="true" default="Atlassian-AuditLogs" />
         <Parameter name="orgID" label="Organization ID" required="true" />

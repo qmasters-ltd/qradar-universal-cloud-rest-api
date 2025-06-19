@@ -74,6 +74,7 @@ The parameters XML document specifies the user settings for this log source, inc
 ## Atlassian Parameters Configuration
 | Parameter   | Name                  | Default Value          | Type           | Required | Description                                       |
 | ----------- | --------------------- | ---------------------- | -------------- | -------- | ------------------------------------------------- |
+| identifier             | Log Source Identifier         | Atlassian-AuditLogs                      | String       | True                  | The log source identifier for QRadar.
 | orgID       | Atlassian Organization ID  |      | String         | Yes            | Atlassian Organization ID.                        |
 | apiToken    | Atlassian API Token      |          | Authentication | Yes            | Atlassian API token for QRadar.                     |
 | query      | Query         |          | String         | No             | Single query term for searching events.                                 |

@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
 
-	<!-- "orgID" - Atlassian Organization ID.-->
-	<Value name="orgID" value="<insert your Atlassian Organization ID>"/>
-	<!-- "apiToken" - Atlassian API token for QRadar (required) -->
-	<Value name="apiToken" value="<insert your API token>"/>
+    <!-- "orgID" - Atlassian Organization ID. -->
+    <Value name="orgID" value=""/>
+    <!-- "apiToken" - Atlassian API token for QRadar (required) -->
+    <Value name="apiToken" value=""/>
 
-	<!-- "query" - Single query term for searching events. (optional) -->
-	<Value name="query" value=""/>
+    <!-- "identifier" - The log source identifier. Default: Atlassian-AuditLogs (optional) -->
+    <Value name="identifier" value=""/>
 
-	<!-- "timeZone" - select your time zone (Default=UTC). (optional) -->
-	<Value name="timeZone" value="UTC"/>
-	<!-- "startTime" - Specify the start time to retrieve logs from. Provide the time in epoch time with milliseconds (e.g., 1693309396000). The default is events from the past 1 hour. (optional) -->
-	<Value name="startTime" value=""/>
+    <!-- "timeZone" - Select your time zone (Default=UTC). (optional) -->
+    <Value name="timeZone" value=""/>
+    <!-- "startTime" - Number of days to look back for initial event ingestion. Useful for historical data collection on first run. Default: 7 days (optional) -->
+    <Value name="startTime" value=""/>
+    <!-- "eventsPerFetch" - Maximum number of event records to fetch in each API call. Large values may increase performance but can cause timeout errors, (max 500). Default: 100  (optional) -->
+    <Value name="eventsPerFetch" value=""/>
 
 </WorkflowParameterValues>

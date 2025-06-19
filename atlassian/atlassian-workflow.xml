@@ -1,109 +1,99 @@
 <Workflow name="Qmasters Atlassian workflow for QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
     <Parameters>
+        <Parameter name="identifier" label="Identifier" required="true" default="Atlassian-AuditLogs" />
         <Parameter name="orgID" label="Organization ID" required="true" />
         <Parameter name="apiToken" label="API Token" required="true" secret="true" />
-        <Parameter name="query" label="Query" required="false" default="" />
         <Parameter name="timeZone" label="Time Zone" required="false" default="UTC" />
-        <Parameter name="startTime" label="Start Time" required="false" default="" />
+        <Parameter name="startTime" label="Start Time" required="false" default="7" />
+        <Parameter name="eventsPerFetch" label="Events Per Fetch" default="100" />
     </Parameters>
 
     <Actions>
         <!-- Clear the log source status before a new workflow run starts -->
         <ClearStatus />
+            
+        <!-- Initialize the last updated time filter for the first run. -->
+        <Initialize path="/bookmark" value="${time() - /startTime * 86400 * 1000}" />
 
-        <!-- Initialize the risingValue filter for the first run. -->
-        <If condition="count(/startTime) > 0" >
-            <Initialize path="/bookmark" value="${/startTime}"/>
-        </If>
-        <Else>
-            <Initialize path="/bookmark" value="${time() - 3600000}" />
-        </Else>
+        <!-- Set the first page number -->
+        <Set path="/fetch_counter" value="1" />
+        <Set path="/events_count" value="0" />
+        <Set path="/total_events_count" value="0" />
+        <Set path="/is_first_fetch" value="true" />
+        <Initialize path="/time_format" value="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" />
 
-        <!-- Set the firse page number -->
-        <Set path="/pageNumber" value="1"/>
-
-        <!-- Get events -->
-        <CallEndpoint url="https://api.atlassian.com/admin/v1/orgs/${/orgID}/events" method="GET" savePath="/getEvents">
+        <!-- Initial fetch -->
+        <Log type="INFO" message="[Atlassian-AuditLogs]: Running fetch number #${/fetch_counter} for Audit Logs..." />
+        <CallEndpoint url="https://api.atlassian.com/admin/v1/orgs/${/orgID}/events-stream" method="GET" savePath="/audits_logs">
+            <SSLConfiguration allowUntrustedServerCertificate="true" />
             <BearerAuthentication token="${/apiToken}" />
-            <QueryParameter name="from" value="${/bookmark}" omitIfEmpty="true"/>
-            <QueryParameter name="cursor" value="${/cursor}" omitIfEmpty="true"/>
-            <QueryParameter name="query" value="${/query}" omitIfEmpty="true"/>
-            <QueryParameter name="order" value="desc"/>
+            <QueryParameter name="from" value="${/bookmark}"/>
+            <QueryParameter name="limit" value="${/eventsPerFetch}"/>
+            <QueryParameter name="order" value="ASC"/>
         </CallEndpoint>
 
         <!-- Handle Errors -->
-        <If condition="/getEvents/status_code != 200">
-            <Log type="ERROR" message="Atlassian API error: ${/getEvents/body}"/>
-            <Abort reason="Atlassian abort reason: ${/getEvents/body}" />
+        <If condition="/audits_logs/status_code != 200">
+            <Log type="ERROR" message="[Atlassian-AuditLogs]: Error: ${/audits_logs/body}"/>
+            <Abort reason="[Atlassian-AuditLogs] Atlassian abort reason: ${/audits_logs/body}" />
         </If>
 
-        <!-- Set the number of events -->
-        <Set path="/currentFetchEvents" value="${count(/getEvents/body/data/id)}"/>
-        <Set path="/numberOfEvents" value="${/currentFetchEvents}"/>
-
-        <!-- Post Events, if any -->
-        <If condition="count(/currentFetchEvents) > 0">
-            <PostEvents path="/getEvents/body/data" source="${/orgID}" />
+        <Set path="/events_count" value="${/audits_logs/body/meta/total}" />
+        <Set path="/total_events_count" value="${/total_events_count + /events_count}" />
+        
+        <If condition="${/events_count} > 0">
+            <!-- Post Events to Qradar. -->
+            <Log type="INFO" message="[Atlassian-AuditLogs]: Posting ${/events_count} events for fetch #${/fetch_counter}" />
+            <PostEvents path="/audits_logs/body/data" source="${/identifier}" />
         </If>
 
-        <!-- Prepare the lastEventsTime path -->
-        <Set path="/lastEventsTime" value="[]"/>
+        <Set path="/cursor" value="${/audits_logs/body/meta/next}" />
+        
+        <!-- Loop to handle pagination -->
+        <While condition="not empty(/audits_logs/body/meta/next) and (/audits_logs/body/meta/total >= /audits_logs/body/meta/page_size)" >
+            <Log type="INFO" message="[Atlassian-AuditLogs]: Running fetch number #${/fetch_counter} for Audit Logs..." />
 
-        <!-- Merge the log data from the API response into the "/lastEventsTime" path. -->
-        <Merge targetPath="/lastEventsTime" sourcePath="/getEvents/body/data/attributes/time" />
-
-        <Log type="INFO" message="Page number: ${/pageNumber}, Number of events in this fetched: ${/currentFetchEvents}"/>
-
-        <!-- Prepare the URL within body.links.next for the next requst -->
-        <Set path="/nextLink" value="${/getEvents/body/links/next}" />
-
-        <!-- This loop runs as long as there is a next link available -->
-        <While condition="count(/nextLink) > 0">
-
-            <!-- Make another API call using the next link -->
-            <CallEndpoint url="${/nextLink}" method="GET" savePath="/getEvents">
+            <CallEndpoint url="https://api.atlassian.com/admin/v1/orgs/${/orgID}/events-stream" method="GET" savePath="/audits_logs">
+                <SSLConfiguration allowUntrustedServerCertificate="true" />
                 <BearerAuthentication token="${/apiToken}" />
+                <QueryParameter name="cursor" value="${/cursor}"/>
+                <QueryParameter name="order" value="ASC"/>
+                <QueryParameter name="limit" value="${/eventsPerFetch}"/>
             </CallEndpoint>
 
             <!-- Handle Errors -->
-            <If condition="/getEvents/status_code != 200">
-                <Log type="ERROR" message="Atlassian API error: ${/getEvents/body}"/>
-                <Abort reason="Atlassian abort reason: ${/getEvents/body}" />
+            <If condition="/audits_logs/status_code != 200">
+                <Log type="ERROR" message="[Atlassian-AuditLogs]: Error: ${/audits_logs/body}"/>
+                <Abort reason="[Atlassian-AuditLogs] Atlassian abort reason: ${/audits_logs/body}" />
             </If>
 
-            <!-- Set the number of events -->
-            <Set path="/currentFetchEvents" value="${count(/getEvents/body/data/id)}"/>
-            <Set path="/numberOfEvents" value="${/numberOfEvents + /currentFetchEvents}"/>
+            <!-- Handle a successful response. -->         
+            <Set path="/events_count" value="${/audits_logs/body/meta/total}" />
 
-            <!-- Post Events, if any -->
-            <If condition="count(/currentFetchEvents) > 0">
-                <PostEvents path="/getEvents/body/data" source="${/orgID}" />
+            <If condition="${/events_count} > 0">
+                <Set path="/total_events_count" value="${/total_events_count + /events_count}" />
+                <Set path="/cursor" value="${/audits_logs/body/meta/next}" />
+                <Set path="/fetch_counter" value="${/fetch_counter + 1}" />
+                
+                <!-- Post Events to Qradar. -->
+                <Log type="INFO" message="[Atlassian-AuditLogs]: Posting ${/events_count} events for fetch #${/fetch_counter}" />
+                <PostEvents path="/audits_logs/body/data" source="${/identifier}" />
             </If>
-
-            <!-- Set the next page number -->
-            <Set path="/pageNumber" value="${/pageNumber + 1}"/>
-            <Log type="INFO" message="Page number: ${/pageNumber}, Number of events in this fetched: ${/currentFetchEvents}"/>
-
-            <!-- Merge the log times from the API response into the "/lastEventsTime" path. -->
-            <Merge targetPath="/lastEventsTime" sourcePath="/getEvents/body/data/attributes/time" />
-
-            <!-- Extract the next link for the next iteration -->
-            <Set path="/nextLink" value="${/getEvents/body/links/next}" />
+            
         </While>
-
-        <Log type="INFO" message="Total number of fetched events: ${/numberOfEvents}."/>
-
-        <If condition="count(/lastEventsTime) > 0">
-            <!-- Update the bookmark -->
-            <Set path="/lastEvent" value="${max(/lastEventsTime)}" />
-            <ParseDate pattern="yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'" timeZone="${/timeZone}" date="${/lastEvent}" savePath="/lastEventTime" />
-            <Set path="/bookmark" value="${/lastEventTime + 1}" />
+        
+        <If condition="${/total_events_count} > 0">
+            
+            <!-- Update bookmark for the next run. -->
+            <Set path="/bookmark" value="${/audits_logs/body/data[${/events_count - 1}]/attributes/time}" />
+            <ParseDate pattern="${/time_format}" timeZone="${/timeZone}" date="${/bookmark}" savePath="/bookmark" />
+            <Set path="/bookmark" value="${/bookmark + 1}" />
+            
+            <Log type="INFO" message="[Atlassian-AuditLogs]: Audit Logs collection completed. Total fetched audits: ${/total_events_count}." />
         </If>
         <Else>
-            <Set path="/heartBeatLog" value="The connection to the Atlassian API was successfully established; however, there are no new events available for retrieval at this moment. The last event received was at: ${/lastEvent} (UTC). "/>
-            <PostEvent path="/heartBeatLog" source="${/orgID}" />
+            <Log type="INFO" message="[Atlassian-AuditLogs]: No new audit logs found." />
         </Else>
-
     </Actions>
 
     <Tests>

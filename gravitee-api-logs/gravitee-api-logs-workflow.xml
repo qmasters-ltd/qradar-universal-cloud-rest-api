@@ -1,0 +1,112 @@
+<Workflow name="Qmasters Gravitee API Logs workflow for QRadar" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="api_host" label="Host Name" required="true" />
+        <Parameter name="api_token" label="API Token" required="true" secret="true" />
+        <Parameter name="org_id" label="Organization ID" required="false" default="DEFAULT" />
+        <Parameter name="env_id" label="Environment ID" required="false" default="DEFAULT"/>
+        <Parameter name="identifier" label="Identifier" required="false" default="Gravitee-API-Logs"/>
+        <Parameter name="max_results" label="Page Size" required="false" default="100" />
+        <Parameter name="initial_event_fetch_period" label="Initial Event Fetch Period in Days" required="false" default="7"/>
+    </Parameters>
+
+    <Actions>
+        <!-- Clear the log source status before a new workflow run starts -->
+        <Log type="INFO" message="Gravitee API Logs: Starting workflow execution." />
+        <ClearStatus />
+
+        <!-- Initialize the risingValue filter for the first run. -->
+        <If condition="/initial_event_fetch_period > 0" >
+            <Initialize path="/bookmark" value="${time() - /initial_event_fetch_period * 86400 * 1000}"/>
+        </If>
+        <Else>
+            <Initialize path="/bookmark" value="${time() - 604800000}" />
+        </Else>
+
+        <!-- Set the first page number -->
+        <Set path="/from" value="${/bookmark}"/>
+        <Set path="/max_time" value="${/bookmark}"/>
+        
+        <!-- <Set path="/to" value="${time()}"/> -->
+        <Set path="/to" value="${time()}"/>
+
+        <Log type="INFO" message="Gravitee API Logs: Bookmark: ${/bookmark}." />
+
+        <!-- Get API List -->
+        <Log type="INFO" message="Gravitee API Logs: Fetching API list." />
+        <CallEndpoint url="${/api_host}/organizations/${/org_id}/environments/${/env_id}/apis" method="GET" savePath="/get_api_list" >
+            <SSLConfiguration allowUntrustedServerCertificate="true" />
+            <RequestHeader name="Authorization" value="Bearer ${/api_token}" />
+            <RequestHeader name="Accept" value="application/json" />
+            <RequestHeader name="Content-Type" value="application/json" />
+        </CallEndpoint>
+        
+        <!-- Error Handling -->
+        <If condition="/get_api_list/status_code != 200">
+            <Log type="ERROR" message="Failed to fetch api list: ${/get_api_list/body/message}" />
+            <Abort reason="Failed to fetch api list: ${/get_api_list/body/message}" />
+        </If>
+        
+        <ForEach item="/current_api" items="/get_api_list/body" >
+            <Log type="INFO" message="Gravitee API Logs: Processing API: ${/current_api/name}..." />
+            
+            <!-- Set the first page number -->
+            <Set path="/page" value="1"/>
+            <Set path="/logs_count" value="0"/>
+            
+            <DoWhile condition="/get_api_logs/body/total > /logs_count" >
+                <Log type="INFO" message="Gravitee API Logs: Fetching page number: ${/page}..." />
+                <!-- Get logs for this API -->
+                <CallEndpoint url="${/api_host}/organizations/${/org_id}/environments/${/env_id}/apis/${/current_api/id}/logs" method="GET" savePath="/get_api_logs" >
+                    <SSLConfiguration allowUntrustedServerCertificate="true" />
+                    <QueryParameter name="from" value="${/from}" />
+                    <QueryParameter name="to" value="${/to}" />
+                    <QueryParameter name="page" value="${/page}" />
+                    <QueryParameter name="size" value="${/max_results}" />
+                    <QueryParameter name="order" value="true" />
+                    <RequestHeader name="Authorization" value="Bearer ${/api_token}" />
+                    <RequestHeader name="Accept" value="application/json" />
+                    <RequestHeader name="Content-Type" value="application/json" />
+                </CallEndpoint>
+                
+                <!-- Error Handling -->
+                <If condition="/get_api_logs/status_code != 200">
+                    <Log type="ERROR" message="Failed to fetch logs for API ${/current_api/name}: ${/get_api_logs/body}" />
+                    <Abort reason="Failed to fetch logs for API ${/current_api/name}: ${/get_api_list/body}" />
+                </If>
+                
+                <Set path="/page" value="${/page + 1}" />
+                <Set path="/logs_count" value="${/logs_count + count(/get_api_logs/body/logs)}"/>
+                <Log type="INFO" message="Gravitee API Logs: Fetched ${/logs_count} / ${/get_api_logs/body/total} logs." />
+                
+                <!-- Post events if any -->
+                <If condition="not empty(/get_api_logs/body/logs)">
+                    <PostEvents path="/get_api_logs/body/logs" source="${/identifier}" />
+                    <Log type="INFO" message="Gravitee API Logs: Posted events." />
+                </If>
+            </DoWhile>
+
+            <If condition="not empty(/get_api_logs/body/logs)">
+                <Set path="/api_max_time" value="${/get_api_logs/body/logs[${count(/get_api_logs/body/logs) - 1}]/timestamp}" />
+                
+                <If condition="/api_max_time > /max_time">
+                    <Set path="/max_time" value="${/api_max_time}" />
+                </If>
+                <Log type="INFO" message="Gravitee API Logs: Done Processing API: ${/current_api/name}" />
+            </If>
+            <Else>
+                <Log type="INFO" message="Gravitee API Logs: No logs found for API: ${/current_api/name}" />
+            </Else>
+        </ForEach>
+        
+        <Set path="/bookmark" value="${/max_time + 1}" />
+        <Log type="INFO" message="Gravitee API Logs: Bookmark updated to ${/bookmark}." />
+        <Log type="INFO" message="Gravitee API Logs: Workflow completed." />
+    </Actions>
+
+    <Tests>
+        <DNSResolutionTest host="${/api_host}" />
+        <TCPConnectionTest host="${/api_host}" />
+        <SSLHandshakeTest host="${/api_host}" />
+        <HTTPConnectionThroughProxyTest url="${/api_host}" expectedResponseStatus="404" />
+    </Tests>
+</Workflow>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+    <!-- [api_host] [REQUIRED] - Gravitee API host for the audit logs. -->
+    <Value name="api_host" value=""/>
+    <!-- [api_token] [REQUIRED] - Gravitee API token for QRadar. -->
+    <Value name="api_token" value=""/>
+    <!-- [org_id] [OPTIONAL] - Organization ID, default is DEFAULT. -->
+    <Value name="org_id" value="DEFAULT"/>
+    <!-- [env_id] [OPTIONAL] - Environment ID, default is DEFAULT. -->
+    <Value name="env_id" value="DEFAULT"/>
+    <!-- [identifier] [REQUIRED] - The log source identifier. -->
+	<Value name="identifier" value="Gravitee API"/>
+
+    <!-- [max_results] [OPTIONAL] - Max number of events to return per poll (Default=100). -->
+    <Value name="max_results" value="100"/>
+    <!-- [initial_event_fetch_period] [OPTIONAL] - Specify the start time in epoch time with milliseconds (e.g., 1693309396000) to retrieve logs from. The default is past 7 days. -->
+	<Value name="initial_event_fetch_period" value="7"/>
+
+</WorkflowParameterValues>

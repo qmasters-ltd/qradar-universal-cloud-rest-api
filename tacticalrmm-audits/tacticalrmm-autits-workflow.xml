@@ -1,0 +1,117 @@
+<Workflow name="Qmasters Tactical RMM Audit Logs workflow for QRadar" version="2.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="api_host" label="Host Name" required="true"/>
+        <Parameter name="api_key" label="API Key" required="true" secret="true"/>
+        <Parameter name="identifier" label="Identifier" required="false" default="Tactical-RMM-Audit"/>
+        <Parameter name="max_results" label="Page Size" required="false" default="100"/>
+        <Parameter name="initial_event_fetch_period" label="Initial Event Fetch Period in Days" required="false" default="1"/>
+    </Parameters>
+
+    <Actions>
+        <Log type="INFO" message="Tactical RMM Audit: Starting workflow execution." />
+        <ClearStatus />
+
+        <!-- Initialize the audit ID bookmark -->
+        <If condition="empty(/last_audit_id)">
+            <Initialize path="/last_audit_id" value="0"/>
+        </If>
+
+        <!-- Set fetch period for the first run -->
+        <If condition="/initial_event_fetch_period > 0">
+            <Initialize path="/bookmark_days" value="/initial_event_fetch_period"/>
+        </If>
+        <Else>
+            <Initialize path="/bookmark_days" value="1"/>
+        </Else>
+
+        <Set path="/page" value="1"/>
+        <Set path="/logs_count" value="0"/>
+        <Set path="/max_audit_id_this_run" value="0"/>
+        <Set path="/has_more" value="true"/>
+
+        <DoWhile condition="/has_more = true">
+            <Log type="INFO" message="Tactical RMM Audit: Fetching page #${/page} (last_audit_id: ${/last_audit_id}, period: ${/bookmark_days} days)." />
+            <CallEndpoint url="${/api_host}/logs/audit/" method="PATCH" savePath="/get_audit_logs">
+                <SSLConfiguration allowUntrustedServerCertificate="true"/>
+                <RequestHeader name="Content-Type" value="application/json"/>
+                <RequestHeader name="X-API-KEY" value="${/api_key}"/>
+                <RequestBody type="text/xml" encoding="UTF-8">
+                {
+                    "pagination": {
+                        "sortBy": "id",
+                        "descending": false,
+                        "page": ${/page},
+                        "rowsPerPage": ${/max_results},
+                        "rowsNumber": null
+                    },
+                    "timeFilter": ${/bookmark_days}
+                }
+                </RequestBody>
+            </CallEndpoint>
+
+            <!-- Error Handling -->
+            <If condition="/get_audit_logs/status_code != 200">
+                <Log type="ERROR" message="Tactical RMM Audit: Failed to fetch audit logs: ${/get_audit_logs/body}" />
+                <Abort reason="Tactical RMM Audit: Failed to fetch audit logs: ${/get_audit_logs/body}" />
+            </If>
+
+            <!-- Defensive: handle missing/empty array -->
+            <If condition="not empty(/get_audit_logs/body/audit_logs)">
+                
+                <Log type="INFO" message="Tactical RMM Audit: No logs on this page."/>
+                <Set path="/has_more" value="false"/>
+            </If>
+
+            <!-- Deduplication: Only process logs with id > /last_audit_id -->
+            <Set path="/new_logs" value="[]"/>
+            
+            <ForEach item="/log" items="/get_audit_logs/body/audit_logs">
+                <If condition="/log/id > /last_audit_id">
+                    <Merge sourcePath="/log" targetPath="/new_logs"/>
+                    <If condition="/log/id > /max_audit_id_this_run">
+                        <Set path="/max_audit_id_this_run" value="/log/id"/>
+                    </If>
+                </If>
+            </ForEach>
+
+            <Set path="/new_logs_count" value="count(/new_logs)"/>
+            <Set path="/logs_count" value="${/logs_count + /new_logs_count}"/>
+
+            <If condition="/new_logs_count > 0">
+                <PostEvents path="/new_logs" source="${/identifier}"/>
+                <Log type="INFO" message="Tactical RMM Audit: Posted ${/new_logs_count} new logs (total this run: ${/logs_count})."/>
+            </If>
+            <Else>
+                <Log type="INFO" message="Tactical RMM Audit: No new logs to post from this page."/>
+            </Else>
+
+            <!-- Paging: use total from response body -->
+            <Set path="/total_logs" value="/get_audit_logs/body/total"/>
+            <If condition="${/new_logs_count} = /total_logs">
+                <Set path="/has_more" value="false"/>
+                <Log type="INFO" message="Tactical RMM Audit: All pages processed (page: ${/page}, total: ${/total_logs})."/>
+            </If>
+            <Else>
+                <Set path="/page" value="${/page + 1}"/>
+            </Else>
+        </DoWhile>
+
+        <!-- After all pages, persist max_audit_id for next poll -->
+        <If condition="/max_audit_id_this_run > /last_audit_id">
+            <Set path="/last_audit_id" value="/max_audit_id_this_run"/>
+            <Log type="INFO" message="Tactical RMM Audit: last_audit_id updated to ${/last_audit_id}." />
+        </If>
+        <Else>
+            <Log type="INFO" message="Tactical RMM Audit: last_audit_id unchanged; no new logs."/>
+        </Else>
+
+        <Log type="INFO" message="Tactical RMM Audit: Workflow completed. Total new logs posted: ${/logs_count}." />
+    </Actions>
+
+    <Tests>
+        <DNSResolutionTest host="${/api_host}"/>
+        <TCPConnectionTest host="${/api_host}"/>
+        <SSLHandshakeTest host="${/api_host}"/>
+        <HTTPConnectionThroughProxyTest url="${/api_host}/logs/audit/" expectedResponseStatus="405"/>
+    </Tests>
+</Workflow>

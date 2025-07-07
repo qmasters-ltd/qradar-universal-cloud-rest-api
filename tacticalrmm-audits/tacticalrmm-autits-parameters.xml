@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkflowParameterValues
+    xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+    <!-- [api_host] [REQUIRED] - Tactical RMM API host for audit logs. -->
+    <Value name="api_host" value="https://api.fortresscyber.io" />
+
+    <!-- [api_key] [REQUIRED] - Tactical RMM API Key for authentication. -->
+    <Value name="api_key" value="" />
+
+    <!-- [identifier] [OPTIONAL] - The log source identifier. -->
+    <Value name="identifier" value="Tactical-RMM-Audit" />
+
+    <!-- [max_results] [OPTIONAL] - Max number of events to return per poll (Default=50). -->
+    <Value name="max_results" value="100" />
+
+    <!-- [initial_event_fetch_period] [OPTIONAL] - Number of days back to start fetching logs from.
+    Default is 1 (last 24 hours). -->
+    <Value name="initial_event_fetch_period" value="1" />
+
+</WorkflowParameterValues>

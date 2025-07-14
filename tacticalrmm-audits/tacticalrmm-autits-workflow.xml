@@ -18,7 +18,7 @@
 
         <!-- Set fetch period for the first run -->
         <If condition="/initial_event_fetch_period > 0">
-            <Initialize path="/bookmark_days" value="/initial_event_fetch_period"/>
+            <Initialize path="/bookmark_days" value="${/initial_event_fetch_period}"/>
         </If>
         <Else>
             <Initialize path="/bookmark_days" value="1"/>
@@ -41,13 +41,13 @@
                         "sortBy": "id",
                         "descending": false,
                         "page": ${/page},
-                        "rowsPerPage": ${/max_results},
-                        "rowsNumber": null
+                        "rowsPerPage": ${/max_results}
                     },
                     "timeFilter": ${/bookmark_days}
                 }
                 </RequestBody>
             </CallEndpoint>
+            <Log type="INFO" message="Tactical RMM Audit: ${/get_audit_logs/body/audit_logs}."/> 
 
             <!-- Error Handling -->
             <If condition="/get_audit_logs/status_code != 200">
@@ -56,7 +56,7 @@
             </If>
 
             <!-- Defensive: handle missing/empty array -->
-            <If condition="not empty(/get_audit_logs/body/audit_logs)">
+            <If condition="empty(/get_audit_logs/body/audit_logs)">
                 
                 <Log type="INFO" message="Tactical RMM Audit: No logs on this page."/>
                 <Set path="/has_more" value="false"/>
@@ -65,20 +65,31 @@
             <!-- Deduplication: Only process logs with id > /last_audit_id -->
             <Set path="/new_logs" value="[]"/>
             
+            <Log type="INFO" message="Tactical RMM Audit: log ID ${/last_audit_id}."/> 
             <ForEach item="/log" items="/get_audit_logs/body/audit_logs">
+
                 <If condition="/log/id > /last_audit_id">
-                    <Merge sourcePath="/log" targetPath="/new_logs"/>
+                    <!-- <Log type="INFO" message="Tactical RMM Audit: log ${/log}."/>  -->
+                    <Log type="INFO" message="Tactical RMM Audit: 1 log ID ${/log/id}."/> 
+
+                    <Add path="/new_logs" value="${/log}" />
+                    <!-- <Log type="INFO" message="Tactical RMM Audit: new_logs ${/new_logs}."/>  -->
                     <If condition="/log/id > /max_audit_id_this_run">
-                        <Set path="/max_audit_id_this_run" value="/log/id"/>
+                        <Set path="/max_audit_id_this_run" value="${/log/id}"/>
+                        <Log type="INFO" message="Tactical RMM Audit: 2 log ID ${/log/id}."/> 
+                        <Log type="INFO" message="Tactical RMM Audit: max_audit_id_this_run ${/max_audit_id_this_run}."/> 
+
                     </If>
                 </If>
             </ForEach>
-
-            <Set path="/new_logs_count" value="count(/new_logs)"/>
+            <Log type="INFO" message="Tactical RMM Audit: finish foreach."/> 
+            
+            <Set path="/new_logs_count" value="${count(/new_logs)}"/>
+            <Log type="INFO" message="Tactical RMM Audit: new_logs_count ${/new_logs_count}."/> 
             <Set path="/logs_count" value="${/logs_count + /new_logs_count}"/>
 
             <If condition="/new_logs_count > 0">
-                <PostEvents path="/new_logs" source="${/identifier}"/>
+                <!-- <PostEvents path="/new_logs" source="${/identifier}"/> -->
                 <Log type="INFO" message="Tactical RMM Audit: Posted ${/new_logs_count} new logs (total this run: ${/logs_count})."/>
             </If>
             <Else>
@@ -86,8 +97,8 @@
             </Else>
 
             <!-- Paging: use total from response body -->
-            <Set path="/total_logs" value="/get_audit_logs/body/total"/>
-            <If condition="${/new_logs_count} = /total_logs">
+            <Set path="/total_logs" value="${/get_audit_logs/body/total}"/>
+            <If condition="${/total_logs >= /max_results}">
                 <Set path="/has_more" value="false"/>
                 <Log type="INFO" message="Tactical RMM Audit: All pages processed (page: ${/page}, total: ${/total_logs})."/>
             </If>
@@ -98,7 +109,7 @@
 
         <!-- After all pages, persist max_audit_id for next poll -->
         <If condition="/max_audit_id_this_run > /last_audit_id">
-            <Set path="/last_audit_id" value="/max_audit_id_this_run"/>
+            <Set path="/last_audit_id" value="${/max_audit_id_this_run}"/>
             <Log type="INFO" message="Tactical RMM Audit: last_audit_id updated to ${/last_audit_id}." />
         </If>
         <Else>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+
+    <!-- [api_host] [REQUIRED] - Cisco Umbrella API base URL. -->
+    <Value name="api_host" value="https://api.umbrella.com" />
+    <!-- [client_id] [REQUIRED] - Cisco Umbrella API Client ID. -->
+    <Value name="client_id" value="" />
+    <!-- [client_secret] [REQUIRED] - Cisco Umbrella API Client Secret. -->
+    <Value name="client_secret" value="" />
+    <!-- [max_results] [OPTIONAL] - Max number of events to return per poll (Default=5000). -->
+    <Value name="max_results" value="5000" />
+    <!-- [initial_event_fetch_period] [OPTIONAL] - Number of hours back to fetch events for the first run (default=1). -->
+    <Value name="initial_event_fetch_period" value="1" />
+    <!-- [identifier] [REQUIRED] - The log source identifier. -->
+	<Value name="identifier" value="CiscoUmbrellaDNS"/>
+
+</WorkflowParameterValues>

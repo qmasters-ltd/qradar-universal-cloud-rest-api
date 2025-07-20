@@ -1,0 +1,107 @@
+<Workflow name="Qmasters Cisco Umbrella DNS workflow for QRadar" version="2.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    <Parameters>
+        <Parameter name="api_host" label="Umbrella API Host" required="true" default="https://api.umbrella.com" />
+        <Parameter name="client_id" label="Umbrella Client ID" required="true" secret="true" />
+        <Parameter name="client_secret" label="Umbrella Client Secret" required="true" secret="true" />
+        <Parameter name="initial_event_fetch_period" label="Initial Event Fetch Period in Hours" required="false" default="1" />
+        <Parameter name="max_results" label="Page Size" required="false" default="5000" />
+        <Parameter name="identifier" label="Identifier" required="false" default="CiscoUmbrellaDNS"/>
+    </Parameters>
+
+    <Actions>
+        <ClearStatus />
+        <Log type="INFO" message="Cisco Umbrella DNS: Starting workflow execution." />
+        
+        <!-- Initialize the bookmark (timestamp) -->
+        <If condition="count(/initial_event_fetch_period) > 0">
+            <Initialize path="/bookmark" value="${time() - /initial_event_fetch_period * 3600 * 1000}" />
+        </If>
+        <Else>
+            <Initialize path="/bookmark" value="${time() - 1 * 3600 * 1000}" />
+        </Else>
+        <Set path="/from" value="${/bookmark}" />
+        <Set path="/offset" value="0" />
+        <Set path="/total_events" value="0" />
+        <Set path="/page" value="1" />
+
+        <!-- Obtain OAuth2 access token -->
+        <Log type="INFO" message="Cisco Umbrella DNS: Fetching access token." />
+        <CallEndpoint url="${/api_host}/auth/v2/token" method="POST" savePath="/get_access_token">
+            <SSLConfiguration allowUntrustedServerCertificate="true" />
+            <BasicAuthentication username="${/client_id}" password="${/client_secret}" />
+            <RequestHeader name="Accept" value="application/json" />
+            <RequestHeader name="Content-Type" value="application/x-www-form-urlencoded" />
+        </CallEndpoint>
+
+        <If condition="/get_access_token/status_code != 200">
+            <Log type="ERROR" message="Cisco Umbrella DNS: Failed to get access token. ${/get_access_token/body}" />
+            <Abort reason="Cisco Umbrella DNS: Failed to get access token. ${/get_access_token/body}" />
+        </If>
+
+        <Set path="/access_token" value="${/get_access_token/body/access_token}" />
+        <Log type="INFO" message="Cisco Umbrella DNS: Successfully fetched access token." />
+
+        <Log type="INFO" message="Cisco Umbrella DNS: Fetching activity logs starting from bookmark (epoch ms): ${/from}." />
+        <Set path="/events_count" value="0" />
+
+
+        <!-- Fetch and ingest loop -->
+        <DoWhile condition="/events_count >= /max_results">
+            <CallEndpoint url="${/api_host}/reports/v2/activity" method="GET" savePath="/getActivities">
+                <SSLConfiguration allowUntrustedServerCertificate="true" />
+                <QueryParameter name="from" value="${/from}" />
+                <QueryParameter name="to" value="${time()}" />
+                <QueryParameter name="limit" value="${/max_results}" />
+                <QueryParameter name="offset" value="${/offset}" />
+                <RequestHeader name="Authorization" value="Bearer ${/access_token}" />
+                <RequestHeader name="Accept" value="application/json" />
+            </CallEndpoint>
+
+            <!-- Error handling -->
+            <If condition="/getActivities/status_code != 200">
+                <Log type="ERROR" message="Cisco Umbrella API error: ${/getActivities/body}" />
+                <Abort reason="Cisco Umbrella API abort: ${/getActivities/body}" />
+            </If>
+
+            <!-- Count and process logs -->
+            <Set path="/events_count" value="${count(/getActivities/body/data)}"/>
+            <Log type="INFO" message="Cisco Umbrella DNS: ${/events_count} events fetched in page: ${/page}" />
+
+            <!-- If events exist, post them -->
+            <If condition="/events_count > 0">
+                <PostEvents path="/getActivities/body/data" source="${/identifier}" />
+                <Set path="/total_events" value="${/total_events + /events_count}" />
+                <Set path="/offset" value="${/offset + /events_count}" />
+                <Set path="/page" value="${/page + 1 }" />
+                <Set path="/last_event" value="${/getActivities/body/data[0]/timestamp}"/>
+                <If condition="/last_event > /bookmark">
+                    <Set path="/bookmark" value="${/last_event}" />
+                    <Log type="INFO" message="Cisco Umbrella DNS: Updated last event time to ${/bookmark}" />
+                </If>
+            </If>
+            <Else>
+                <Log type="INFO" message="Cisco Umbrella DNS: No more activity logs to fetch. Exiting loop." />
+            </Else>           
+        </DoWhile>
+
+        <If condition="/max_results > /events_count">
+            <Log type="INFO" message="Cisco Umbrella DNS: Last page of data received. Exiting loop." />
+            <!-- Find max timestamp for bookmark (next fetch) -->
+            <Set path="/lastEventTimeList" value="${/getActivities/body/data[0]/timestamp}" />
+            <Log type="INFO" message="Cisco Umbrella DNS: lastEventTimeList ${/lastEventTimeList}" />
+            <Set path="/bookmark" value="${/lastEventTimeList + 1}" />
+            <Set path="/offset" value="0" />
+            <Set path="/page" value="1" />
+            <Log type="INFO" message="Cisco Umbrella DNS: Updated bookmark to ${/bookmark}" />
+            <Log type="INFO" message="Cisco Umbrella DNS: Total number of events ingested this run: ${/total_events}" />
+        </If>
+
+    </Actions>
+
+    <Tests>
+        <DNSResolutionTest host="api.umbrella.com" />
+        <TCPConnectionTest host="api.umbrella.com" />
+        <SSLHandshakeTest host="api.umbrella.com" />
+        <HTTPConnectionThroughProxyTest url="https://api.umbrella.com/reports/v2/activity" expectedResponseStatus="401" />
+    </Tests>
+</Workflow>

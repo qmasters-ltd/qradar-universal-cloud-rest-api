@@ -21,7 +21,7 @@
             <Initialize path="/bookmark_days" value="${/initial_event_fetch_period}"/>
         </If>
         <Else>
-            <Initialize path="/bookmark_days" value="1"/>
+            <Set path="/bookmark_days" value="1"/>
         </Else>
 
         <Set path="/page" value="1"/>
@@ -62,8 +62,8 @@
 
             <!-- Deduplication: Only process logs with id > /last_audit_id -->
             <Set path="/new_logs" value="[]"/>     
+            
             <ForEach item="/log" items="/get_audit_logs/body/audit_logs">
-
                 <If condition="/log/id > /last_audit_id">
                     <Add path="/new_logs" value="${/log}" />
                     <If condition="/log/id > /max_audit_id_this_run">
@@ -72,6 +72,7 @@
                 </If>
             </ForEach>
             
+            <Set path="/bookmark_days" value="1"/>     
             <Set path="/new_logs_count" value="${count(/new_logs)}"/>
             <Set path="/logs_count" value="${/logs_count + /new_logs_count}"/>
 
@@ -85,9 +86,9 @@
 
             <!-- Paging: use total from response body -->
             <Set path="/total_logs" value="${/get_audit_logs/body/total}"/>
-            <If condition="${/total_logs >= /max_results}">
+            <If condition="${/total_logs >= count(/get_audit_logs/body/audit_logs)}">
                 <Set path="/has_more" value="false"/>
-                <Log type="INFO" message="Tactical RMM Audit: All pages processed (page: ${/page}, total: ${/total_logs})."/>
+                <Log type="INFO" message="Tactical RMM Audit: All pages processed (page: ${/page}, total: ${/total_logs}, new: ${/new_logs_count})."/>
             </If>
             <Else>
                 <Set path="/page" value="${/page + 1}"/>
@@ -103,7 +104,7 @@
             <Log type="INFO" message="Tactical RMM Audit: last_audit_id unchanged; no new logs."/>
         </Else>
 
-        <Log type="INFO" message="Tactical RMM Audit: Workflow completed. Total new logs posted: ${/total_logs}." />
+        <Log type="INFO" message="Tactical RMM Audit: Workflow completed. Total new logs posted: ${/new_logs_count}." />
     </Actions>
 
     <Tests>

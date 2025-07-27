@@ -3,7 +3,7 @@
     xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
 
     <!-- [api_host] [REQUIRED] - Tactical RMM API host for audit logs. -->
-    <Value name="api_host" value="https://api.fortresscyber.io" />
+    <Value name="api_host" value="" />
 
     <!-- [api_key] [REQUIRED] - Tactical RMM API Key for authentication. -->
     <Value name="api_key" value="" />
